@@ -2,6 +2,7 @@
 
 struct WorldConfig
 {
+	float cameraSpeed = 3.0f;
 	float fov = 45.0f;
 	float viewBegin = 0.1f;
 	float viewDistance = 1000.0f;

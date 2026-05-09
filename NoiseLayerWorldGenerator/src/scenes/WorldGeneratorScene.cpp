@@ -43,8 +43,15 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
     if (Input::isKeyPressed(GLFW_KEY_LEFT_SHIFT)) camera->processKeyboardInput(Camera::DOWN, deltaTime);
     if (Input::isKeyPressed(GLFW_KEY_SPACE)) camera->processKeyboardInput(Camera::UP, deltaTime);
 
-    glm::vec2 delta = Input::getMouseDelta();
-    camera->processMouseMovement(delta.x, delta.y);
+    if (Input::isKeyJustPressed(GLFW_KEY_ESCAPE)) {
+        isCursorMode = !isCursorMode;
+        glfwSetInputMode(window, GLFW_CURSOR, isCursorMode ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+    }
+
+    if (!isCursorMode) {
+        glm::vec2 delta = Input::getMouseDelta();
+        camera->processMouseMovement(delta.x, delta.y);
+    }
 
     if (world) {
         world->updateWorld(camera->position);

@@ -1,7 +1,9 @@
 #include "managers/InputManager.h"
 
 bool InputManager::keyStates[GLFW_KEY_LAST] = { false };
+bool InputManager::prevKeyStates[GLFW_KEY_LAST] = { false };
 bool InputManager::mouseButtonStates[GLFW_MOUSE_BUTTON_LAST] = { false };
+bool InputManager::prevMouseButtonStates[GLFW_MOUSE_BUTTON_LAST] = { false };
 
 double InputManager::mouseX = 0.0;
 double InputManager::mouseY = 0.0;
@@ -10,10 +12,20 @@ double InputManager::lastMouseY = 0.0;
 
 glm::vec2 InputManager::sensitivity = glm::vec2(0.05f, 0.05f);
 
+void InputManager::updateKeyStates() {
+	std::memcpy(prevKeyStates, keyStates, sizeof(keyStates));
+	std::memcpy(prevMouseButtonStates, mouseButtonStates, sizeof(mouseButtonStates));
+}
+
 bool InputManager::isKeyPressed(int key)
 {
 	if (key < 0 || key >= GLFW_KEY_LAST) { return false; }
 	return keyStates[key];
+}
+
+bool InputManager::isKeyJustPressed(int key) {
+	if (key < 0 || key >= GLFW_KEY_LAST) { return false; };
+	return ( keyStates[key] && !prevKeyStates[key] );
 }
 
 bool InputManager::isMouseButtonPressed(int button)

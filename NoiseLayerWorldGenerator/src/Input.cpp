@@ -6,6 +6,11 @@ bool Input::isKeyPressed(int key)
 	return InputManager::isKeyPressed(key);
 }
 
+bool Input::isKeyJustPressed(int key) 
+{
+	return InputManager::isKeyJustPressed(key);
+}
+
 bool Input::isMouseButtonPressed(int button)
 {
 	return InputManager::isMouseButtonPressed(button);

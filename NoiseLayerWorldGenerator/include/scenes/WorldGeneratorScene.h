@@ -28,6 +28,8 @@ public:
 
 private:
 	std::unique_ptr<Camera> camera;
+	//Flaga która sprawdza czy sterujemy myszą lub kamerą
+	bool isCursorMode = false;
 
 	//TYMCZASOWO - test ładowania shaderów
 	std::unique_ptr<Shader> mainShader;

@@ -70,6 +70,9 @@ int main() {
 		float deltaTime = currentFrame - lastFrameTime;
 		lastFrameTime = currentFrame;
 
+		//Zapamiętanie poprzednich stanów przyciksów
+		InputManager::updateKeyStates();
+
 		//Pobranie danych wejściowych i przetworzenie zdarzeń systemowych takich jak zamknięcie okna, zmiana rozmiaru itp Ta funkcja jest kluczowa dla interakcji użytkownika z aplikacją i musi być wywoływana w każdej klatce
 		glfwPollEvents();
 
