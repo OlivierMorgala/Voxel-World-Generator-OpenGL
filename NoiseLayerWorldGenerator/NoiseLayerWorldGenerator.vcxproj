@@ -42,6 +42,7 @@
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkColumn.cpp" />
     <ClCompile Include="src\world\generationAlgorithms\GenerationAlgorithm.cpp" />
+    <ClCompile Include="src\world\generationAlgorithms\PerlinNoise2D.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\WorldConfig.cpp" />
     <ClCompile Include="src\world\WorldRenderer.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="include\world\Chunk.h" />
     <ClInclude Include="include\world\ChunkColumn.h" />
     <ClInclude Include="include\world\generationAlgorithms\GenerationAlgorithm.h" />
+    <ClInclude Include="include\world\generationAlgorithms\PerlinNoise2D.h" />
     <ClInclude Include="include\world\World.h" />
     <ClInclude Include="include\world\WorldConfig.h" />
     <ClInclude Include="include\world\WorldRenderer.h" />
