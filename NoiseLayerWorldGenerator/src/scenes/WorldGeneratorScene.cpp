@@ -12,6 +12,8 @@ void WorldGeneratorScene::onEnter()
 	// Inicjalizacja kamery na pozycji (0, 0, 1) - tymczasowa wartość później bedzie trzeba ja ustalać wzgledem wytworzonego terenu
 	camera = std::make_unique<Camera>(glm::vec3(8.0f, 40.0f, 8.0f));
 
+	worldGenUI = std::make_unique<WorldGeneratorUI>();
+
 	//TYMCZASOWO - test renderowania śiwata
     BlockDatabase::init();
 
@@ -105,4 +107,7 @@ void WorldGeneratorScene::onImGuiRender()
     }
     ImGui::End();
 
+    if (worldGenUI) {
+        worldGenUI->renderImGui();
+    }
 }

@@ -11,6 +11,7 @@
 #include "world/World.h"
 #include "world/WorldRenderer.h"
 #include "managers/WindowManager.h"
+#include "gui/WorldGeneratorUI.h"
 
 class WorldGeneratorScene : public Scene
 {
@@ -34,5 +35,7 @@ private:
 	std::unique_ptr<World> world;
 	std::unique_ptr<WorldRenderer> worldRenderer;
 	//---
+
+	std::unique_ptr<WorldGeneratorUI> worldGenUI;
 };
 
