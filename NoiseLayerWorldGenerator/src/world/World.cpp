@@ -129,3 +129,9 @@ void World::updateWorld(glm::vec3 cameraPosition)
 		}
 	}
 }
+
+void World::clearWorld() 
+{
+	columnsMap.clear();
+	std::cout << "-[WORLD] Oczyszczono swiat z wszystkich chunkow" << std::endl;
+}

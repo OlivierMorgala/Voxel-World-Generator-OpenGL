@@ -21,7 +21,7 @@ void WorldGeneratorScene::onEnter()
     world->setTerrainGenerator(worldTerrainGenerator.get());
     worldRenderer = std::make_unique<WorldRenderer>();
 
-    worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get());
+    worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
     //---
 }
 
@@ -62,7 +62,7 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
 
 void WorldGeneratorScene::render()
 {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// Ustawienie macierzy widoku kamery w shaderze
 	glm::mat4 view = camera->getViewMatrix();

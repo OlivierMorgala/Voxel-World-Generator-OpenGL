@@ -1,9 +1,12 @@
 #include "gui/WorldGeneratorUI.h"
 #include "world/generationAlgorithms/PerlinNoise2D.h"
 #include "world/generationAlgorithms/FlatFill.h"
+#include <world/WorldConfig.h>
+#include <world/World.h>
 
-WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator) :
+WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* world) :
 	worldGenerator(generator), 
+    world(world),
     selectedLayerIndex(-1)
 {
 	
@@ -29,7 +32,7 @@ void WorldGeneratorUI::renderImGui()
 
     ImGui::TextColored(ImVec4(1, 1, 0, 1), "Generation Layers:");
 
-    auto& layers = targetGenerator->generationLayers;
+    auto& layers = worldGenerator->generationLayers;
 
     if (ImGui::BeginListBox("##LayersList", ImVec2(-FLT_MIN, 200))) {
         for (int i = 0; i < layers.size(); i++) {
@@ -44,30 +47,20 @@ void WorldGeneratorUI::renderImGui()
         ImGui::EndListBox();
     }
 
-    // --- PRZYCISKI DODAWANIA ---
     if (ImGui::Button("Add Perlin")) {
         layers.push_back(std::make_unique<PerlinNoise2D>("Perlin", 0, 64, 12345));
-        selectedLayerIndex = layers.size() - 1; // Automatycznie zaznacz nową warstwę
-        std::cout << "[UI] Dodano warstwę Perlin. Łącznie: " << layers.size() << std::endl;
+        std::cout << "+[UI] Dodano warstwe Perlin. Lacznie: " << layers.size() << std::endl;
     }
     ImGui::SameLine();
     if (ImGui::Button("Add Flat")) {
         layers.push_back(std::make_unique<FlatFill>("Flat", 0, 10));
-        selectedLayerIndex = layers.size() - 1; // Automatycznie zaznacz nową warstwę
-        std::cout << "[UI] Dodano warstwę Flat. Łącznie: " << layers.size() << std::endl;
+        std::cout << "+[UI] Dodano warstwe Flat. Lacznie: " << layers.size() << std::endl;
     }
 
     ImGui::Separator();
 
     if (selectedLayerIndex >= 0 && selectedLayerIndex < layers.size()) {
         auto& selectedLayer = layers[selectedLayerIndex];
-
-        ImGui::TextColored(ImVec4(0, 1, 1, 1), "Edit: %s", selectedLayer->layerName.c_str());
-
-        ImGui::DragInt("Start Y", &selectedLayer->startY, 1, 0, 255);
-        ImGui::DragInt("End Y", &selectedLayer->endY, 1, 0, 255);
-
-        ImGui::Separator();
 
         selectedLayer->renderImGuiSettings();
 
@@ -83,7 +76,7 @@ void WorldGeneratorUI::renderImGui()
 
     ImGui::SetCursorPosY(screenHeight - 40);
     if (ImGui::Button("REGENERATE WORLD", ImVec2(-FLT_MIN, 30))) {
-        //W PRZYSZŁOŚCI DODAĆ REGENERACJE ŚWIATA
+		world->clearWorld();
     }
 
     ImGui::End();

@@ -50,11 +50,11 @@ void ChunkColumn::generateMeshes(const World& world)
 {
 	columnMesh.reset();
 
-	std::vector<float> columnVertices;
+	std::vector<Vertex> columnVertices;
 	std::vector<uint32_t> columnIndices;
 	uint32_t indexOffset = 0;
 
-	columnVertices.reserve(Chunk::CHUNK_VOLUME * 5);
+	columnVertices.reserve(Chunk::CHUNK_VOLUME * 2);
 
 	ChunkColumn* frontColumn = world.getChunkColumn(columnX, columnZ + 1);
 	ChunkColumn* backColumn = world.getChunkColumn(columnX, columnZ - 1);

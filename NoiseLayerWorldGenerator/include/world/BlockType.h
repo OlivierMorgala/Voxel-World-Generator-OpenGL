@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <glm/glm.hpp>
 
 // WAŻNE!!!  ---   Definicja typu ID dla bloków używamy uint16_t co pozwala na maksymalnie 65536 różnych typów bloków
 using BlockID = uint16_t;
@@ -13,6 +14,7 @@ struct BlockData
 	std::string name;
 	bool isCollidable;
 	bool isTransparent;
+	glm::vec3 color;
 
 	//Można dodać więcej właściwości bloku w przyszłości, takich jak tekstura itp.
 };

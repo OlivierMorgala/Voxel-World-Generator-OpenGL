@@ -31,16 +31,17 @@ public:
 
     void setTerrainGenerator(WorldTerrainGenerator* generator);
 
-	void setBlock(int x, int y, int z, BlockID blockID);
-	BlockID getBlock(int x, int y, int z) const;
+    void setBlock(int x, int y, int z, BlockID blockID);
+    BlockID getBlock(int x, int y, int z) const;
 
-	void addChunkColumn(int x, int z);
-	ChunkColumn* getChunkColumn(int x, int z) const;
+    void addChunkColumn(int x, int z);
+    ChunkColumn* getChunkColumn(int x, int z) const;
 
-	const std::map<ChunkCords, std::unique_ptr<ChunkColumn>>& getColumnsMap() const;
+    const std::map<ChunkCords, std::unique_ptr<ChunkColumn>>& getColumnsMap() const;
 
     void generateWorldMesh();
-	void render(Shader* shader) const;
+    void render(Shader* shader) const;
     void updateWorld(glm::vec3 cameraPosition);
+    void clearWorld();
 };
 

@@ -18,6 +18,7 @@ private:
 	static double lastMouseX;
 	static double lastMouseY;
 
+	static glm::vec2 mouseDelta;
 	static glm::vec2 sensitivity;
 
 public:

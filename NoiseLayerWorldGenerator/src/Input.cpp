@@ -1,4 +1,6 @@
 #include "Input.h"
+#include "managers/InputManager.h"
+#include <imgui.h> 
 
 
 bool Input::isKeyPressed(int key)
@@ -24,4 +26,9 @@ glm::vec2 Input::getMousePosition()
 glm::vec2 Input::getMouseDelta()
 {
 	return InputManager::getMouseDelta();
+}
+
+bool Input::isMouseOverUI()
+{
+	return ImGui::GetIO().WantCaptureMouse;
 }

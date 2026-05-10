@@ -41,7 +41,6 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 	
 }
 
-
 void WorldRenderer::renderChunkColumn(const ChunkColumn* column, Shader& shader) const
 {
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(column->getX() * Chunk::CHUNK_SIZE, 0, column->getZ() * Chunk::CHUNK_SIZE));

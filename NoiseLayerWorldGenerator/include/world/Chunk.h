@@ -1,5 +1,9 @@
 #pragma once
 #include "BlockType.h"
+#include "Mesh.h"
+#include <memory>
+#include <vector>
+#include <glm/glm.hpp>
 
 class Chunk
 {
@@ -9,6 +13,9 @@ private:
 
 	// Wierzchołki dla każdej z 6 ścianek - (WSPÓŁRZĘDNE LOKALNE!)
 	static const float faceVertices[6][12];
+
+	// Mapowanie rogów ramki
+	static const glm::vec2 faceCoords[4];
 
 	// Tablica przechowująca ID bloków w sekcj
 	std::unique_ptr<BlockID[]> blocksTable;
@@ -27,7 +34,7 @@ public:
 	const static int CHUNK_SIZE = 16;
 	const static int CHUNK_VOLUME = 4096;
 
-	void collectMeshData(std::vector<float>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const;
+	void collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const;
 
 	// Funkcja ustawiająca ID bloku na podstawie jego pozycji w sekcji
 	void setBlock(int x, int y, int z, BlockID blockID);

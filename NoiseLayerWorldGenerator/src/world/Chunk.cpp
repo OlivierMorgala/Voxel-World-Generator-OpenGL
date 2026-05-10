@@ -18,18 +18,23 @@ const float Chunk::faceVertices[6][12] = {
 		{ 0,0,0, 1,0,0, 1,0,1, 0,0,1 }  // Dół
 };
 
+const glm::vec2 Chunk::faceCoords[4] = {
+	{0.0f, 0.0f}, //lewy dół
+	{1.0f, 0.0f}, //prawy dół
+	{1.0f, 1.0f}, //prawy góra
+	{0.0f, 1.0f}  //lewy góra
+};
+
 // Konstruktor domyślny inicjalizujący wskaźnik na tablicę bloków jako nullptr i ustawiający fillBlockID na 0 (co ma reprezentować PUSTY BLOK !!!)
 Chunk::Chunk() : blocksTable(nullptr), fillBlockID(0)
 {
-
 }
 
 Chunk::~Chunk()
 {
-
 }
 
-void Chunk::collectMeshData(std::vector<float>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const
+void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const
 {
 	// Iterujemy przez wszystkie bloki w sekcji
 	for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -39,6 +44,9 @@ void Chunk::collectMeshData(std::vector<float>& vertices, std::vector<uint32_t>&
 				// Pobieramy ID aktualnego bloku. Jeśli jest równy 0 (Pusty blok) to pomijamy go i przechodzimy do następnego bloku
 				BlockID currentBlockID = getBlock(x, y, z);
 				if (currentBlockID == 0) { continue; }
+
+				//Pobieramy dane aktualnego bloku na podstawie jego ID z bazy danych bloków
+				const auto& blockData = BlockDatabase::getBlockData(currentBlockID);
 
 				// Dla każdego bloku sprawdzamy jego 6 sąsiadów (przód, tył, lewo, prawo, góra, dół) aby określić które ścianki są widoczne
 				for (int wall = 0; wall < 6; wall++) {
@@ -85,12 +93,8 @@ void Chunk::collectMeshData(std::vector<float>& vertices, std::vector<uint32_t>&
 
 
 					//Decyzja o rysowaniu ścianki na podstawie otrzymanego bloku sąsiada
-					if (neighborID == 0) {
-						//Jeśli sąsiad jest pustym blokiem (ID=0)
-						isFaceVisible = true;
-					}
-					else if (BlockDatabase::getBlockData(neighborID).isTransparent) {
-						//Jęśli sąsiad jest przeźroczysty
+					if (neighborID == 0 || BlockDatabase::getBlockData(neighborID).isTransparent) {
+						//Jeśli sąsiad jest pustym blokiem (ID=0) lub jest blokiem przezroczystym
 						isFaceVisible = true;
 					}
 
@@ -100,10 +104,21 @@ void Chunk::collectMeshData(std::vector<float>& vertices, std::vector<uint32_t>&
 
 						// Dodajemy wierzchołki dla tej ścianki. Współrzędne wierzchołków są obliczane na podstawie lokalnych współrzędnych ścianki (faceVertices) i globalnej pozycji bloku (x, y, z)
 						for (int v = 0; v < 4; v++) {
-							// Dodajemy globalne współrzędne wierzchołka do wektora wierzchołków. Współrzędne lokalne ścianki są dodawane do globalnej pozycji bloku aby uzyskać globalne współrzędne wierzchołka
-							vertices.push_back(x + faceVertices[wall][v * 3 + 0]);
-							vertices.push_back(y + chunkYOffset + faceVertices[wall][v * 3 + 1]);
-							vertices.push_back(z + faceVertices[wall][v * 3 + 2]);
+							//Tworzymy strukturę wierzchołka i wypełniamy ją danymi
+							Vertex vertex;
+
+							// Obliczamy globalną pozycję wierzchołka dodając lokalne współrzędne ścianki do pozycji bloku. Dodajemy również chunkYOffset do współrzędnej Y aby uwzględnić wysokość chunka w świecie
+							vertex.position = glm::vec3(
+								x + faceVertices[wall][v * 3 + 0],
+								y + chunkYOffset + faceVertices[wall][v * 3 + 1],
+								z + faceVertices[wall][v * 3 + 2]
+							);
+							// Ustawiamy kolor wierzchołka na podstawie koloru bloku z bazy danych bloków
+							vertex.color = blockData.color;
+							// Ustawiamy lokalną pozycję by shader mógł poprawnie nałożyć teksturę ramki na ściankę
+							vertex.localPosition = faceCoords[v];
+
+							vertices.push_back(vertex);
 						}
 
 						// Dodajemy indeksy dla tej ścianki (2 trójkąty tworzące kwadrat)

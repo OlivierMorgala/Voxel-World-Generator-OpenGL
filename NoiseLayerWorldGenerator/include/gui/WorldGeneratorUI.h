@@ -3,14 +3,17 @@
 #include <vector>
 #include <memory>
 
+class World;
+
 class WorldGeneratorUI
 {
 private:
-	WorldTerrainGenerator* worldGenerator = nullptr;
+	WorldTerrainGenerator* worldGenerator;
+	World* world;
 	int selectedLayerIndex = -1;
 
 public:
-	WorldGeneratorUI(WorldTerrainGenerator* generator);
+	WorldGeneratorUI(WorldTerrainGenerator* generator, World* world);
 
 	void renderImGui();
 };

@@ -93,5 +93,4 @@ int main() {
     ImGui::DestroyContext();
     glfwTerminate();
    
-   
 }
