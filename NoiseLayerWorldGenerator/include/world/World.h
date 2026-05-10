@@ -1,7 +1,8 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "world\Chunk.h"
-#include "world\ChunkColumn.h"
+#include "world/Chunk.h"
+#include "world/ChunkColumn.h"
+#include "world/WorldTerrainGenerator.h"
 #include <vector>
 #include <map>
 
@@ -20,11 +21,15 @@ struct ChunkCords {
 class World
 {
 private:
+    WorldTerrainGenerator* terrainGenerator = nullptr;
+
     std::map<ChunkCords, std::unique_ptr<ChunkColumn>> columnsMap;
 
 public:
     World();
     ~World() = default;
+
+    void setTerrainGenerator(WorldTerrainGenerator* generator);
 
 	void setBlock(int x, int y, int z, BlockID blockID);
 	BlockID getBlock(int x, int y, int z) const;

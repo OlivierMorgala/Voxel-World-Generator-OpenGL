@@ -1,19 +1,17 @@
 #pragma once
-#include "world/generationAlgorithms/GenerationAlgorithm.h"
+#include "world/WorldTerrainGenerator.h"
 #include <vector>
 #include <memory>
 
 class WorldGeneratorUI
 {
 private:
-	std::vector<std::unique_ptr<GenerationAlgorithm>> generationLayers;
+	WorldTerrainGenerator* worldGenerator = nullptr;
 	int selectedLayerIndex = -1;
 
 public:
-	WorldGeneratorUI();
+	WorldGeneratorUI(WorldTerrainGenerator* generator);
 
 	void renderImGui();
-
-	void generateColumn();
 };
 

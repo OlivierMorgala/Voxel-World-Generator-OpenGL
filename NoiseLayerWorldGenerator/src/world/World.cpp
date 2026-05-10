@@ -1,4 +1,4 @@
-#include "world\World.h"
+#include "world/World.h"
 
 World::World() {
 
@@ -11,15 +11,9 @@ void World::addChunkColumn(int x, int z)
 	std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
 	auto column = std::make_unique<ChunkColumn>(x, z);
 
-   //-----------------------TYMCZASOWO------------------------------------
-	for (int lx = 0; lx < Chunk::CHUNK_SIZE; lx++) {
-		for (int lz = 0; lz < Chunk::CHUNK_SIZE; lz++) {
-			for (int y = 0; y < 10; y++) { // Wszystko do Y=10 to bloki
-				column->setBlock(lx, y, lz, 1); // 1 = Kamień/Ziemia
-			}
-		}
+	if (terrainGenerator) {
+		terrainGenerator->applyToColumn(*column);
 	}
-	//---------------------------------------------------------------------
 
 	ChunkColumn* columnPtr = column.get();
 	columnsMap[position] = std::move(column);
@@ -52,6 +46,10 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 const std::map<ChunkCords, std::unique_ptr<ChunkColumn>>& World::getColumnsMap() const 
 {
 	return columnsMap;
+}
+
+void World::setTerrainGenerator(WorldTerrainGenerator* generator) {
+	terrainGenerator = generator;
 }
 
 void World::setBlock(int x, int y, int z, BlockID blockID)

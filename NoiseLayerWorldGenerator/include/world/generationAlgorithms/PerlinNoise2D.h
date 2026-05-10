@@ -21,7 +21,7 @@ public:
         int octaves = 4, float freqchange = 2.0f, float ampchange = 0.5f);
 
     // Implementacja metod wirtualnych
-    virtual void applyToColumn() override;
+    virtual void applyToColumn(ChunkColumn& column) override;
     virtual void renderImGuiSettings() override;
 
     // Funkcje pomocnicze

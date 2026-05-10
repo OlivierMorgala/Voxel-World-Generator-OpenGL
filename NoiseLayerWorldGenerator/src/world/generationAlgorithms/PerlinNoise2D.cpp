@@ -25,8 +25,21 @@ PerlinNoise2D::PerlinNoise2D(std::string name, int startY, int endY, unsigned se
     PermutationPerlin.insert(PermutationPerlin.end(), PermutationPerlin.begin(), PermutationPerlin.end());
 }
 
-void PerlinNoise2D::applyToColumn() {
+void PerlinNoise2D::applyToColumn(ChunkColumn& column) {
+    int worldXOffset = column.getX() * 16;
+    int worldZOffset = column.getZ() * 16;
 
+    for (int x = 0; x < 16; x++) {
+        for (int z = 0; z < 16; z++) {
+            float noise = PerlinNoiseFunction(worldXOffset + x, worldZOffset + z);
+
+            int height = startY + static_cast<int>((noise + 1.0f) * 0.5f * (endY - startY));
+
+            for (int y = 0; y <= height; y++) {
+                column.setBlock(x, y, z, 1);
+            }
+        }
+    }
 }
 
 void PerlinNoise2D::renderImGuiSettings() {
