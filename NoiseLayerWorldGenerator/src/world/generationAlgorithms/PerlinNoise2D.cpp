@@ -43,16 +43,25 @@ void PerlinNoise2D::applyToColumn(ChunkColumn& column) {
 }
 
 void PerlinNoise2D::renderImGuiSettings() {
-    if (ImGui::TreeNode(layerName.c_str())) {
-        ImGui::DragFloat("Czêstotliwoœæ", &frequencyPerlinNoise, 0.01f);
-        ImGui::DragFloat("Amplituda", &amplitudePerlinNoise, 0.1f);
-        ImGui::DragInt("Oktawy", &octavesPerlinNoise, 1, 1, 8);
-        ImGui::DragFloat("Zmiana Freq", &frequencyChange, 0.01f);
-        ImGui::DragFloat("Zmiana Amp", &amplitudeChange, 0.01f);
-        ImGui::DragInt("Start Y", &startY);
-        ImGui::DragInt("End Y", &endY);
-        ImGui::TreePop();
-    }
+    // Suwaki do konfiguracji bazowych wlasciwosci fali szumu
+    ImGui::TextUnformatted("Parametry bazowe:");
+    ImGui::SliderFloat("Czestotliwosc", &frequencyPerlinNoise, 0.001f, 0.5f, "%.4f");
+    ImGui::SliderFloat("Amplituda", &amplitudePerlinNoise, 1.0f, 256.0f, "%.1f");
+
+    // Bezpieczny suwak dla liczby nakladanych oktaw szumu fraktalnego
+    ImGui::SliderInt("Oktawy", &octavesPerlinNoise, 1, 8);
+    ImGui::Separator();
+
+    // Parametry zmiany czestotliwosci i amplitudy dla kolejnych oktaw
+    ImGui::TextUnformatted("Modyfikatory oktaw:");
+    ImGui::SliderFloat("Zmiana Freq (Lacunarity)", &frequencyChange, 1.0f, 4.0f, "%.2f");
+    ImGui::SliderFloat("Zmiana Amp (Gain)", &amplitudeChange, 0.0f, 1.0f, "%.2f");
+    ImGui::Separator();
+
+    // Wyswietlenie granic generowania w osi Y (powiazane z klasa bazowa)
+    ImGui::TextUnformatted("Granice wysokosci:");
+    ImGui::InputInt("Start Y", &startY);
+    ImGui::InputInt("End Y", &endY);
 }
 
 float PerlinNoise2D::smoothInterpolation(float t, float x, float y) {
