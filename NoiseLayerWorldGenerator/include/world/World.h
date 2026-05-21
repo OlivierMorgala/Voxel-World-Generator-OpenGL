@@ -3,10 +3,21 @@
 #include "world/Chunk.h"
 #include "world/ChunkColumn.h"
 #include "world/WorldTerrainGenerator.h"
+#include "Camera.h"
+#include <future>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <queue>
 #include <vector>
 #include <map>
 
 #include "WorldConfig.h"
+
+enum class WorldState {
+	PLAYING,
+	LOADING
+};
 
 struct ChunkCords {
     int x, z;
@@ -21,13 +32,30 @@ struct ChunkCords {
 class World
 {
 private:
-    WorldTerrainGenerator* terrainGenerator = nullptr;
+	WorldState currentState = WorldState::PLAYING;
 
+    std::thread generationThread;
+	std::vector<std::future<void>> generationFutures;
+	std::atomic<bool> isGenerating = false;
+	std::atomic<int> generatedChunksCount = 0;
+	int totalChunksToGenerate = 0;
+    
+	std::vector<ChunkColumn*> uploadToGPUQueue;
+	std::mutex uploadQueueMutex;
+
+	const Camera* targetCamera = nullptr;
+
+    WorldTerrainGenerator* terrainGenerator = nullptr;
     std::map<ChunkCords, std::unique_ptr<ChunkColumn>> columnsMap;
 
 public:
     World();
-    ~World() = default;
+    ~World();
+
+    WorldState getCurrentState() const;
+    float getGenerationProgress() const;
+
+	void setCamera(const Camera* camera);
 
     void setTerrainGenerator(WorldTerrainGenerator* generator);
 
@@ -41,7 +69,7 @@ public:
 
     void generateWorldMesh();
     void render(Shader* shader) const;
-    void updateWorld(glm::vec3 cameraPosition);
-    void clearWorld();
+    void updateWorld(); 
+    void clearWorld(); 
 };
 

@@ -23,22 +23,13 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 
 			ChunkColumn* column = world.getChunkColumn(columnX, columnZ);
 
-			if (column)
+			if (column && column->hasMesh())
 			{
-				if (!column->hasMesh() || column->needsRerender())
-				{
-					column->generateMeshes(world);
-				}
-
-				if (column->hasMesh())
-				{
-					renderChunkColumn(column, shader);
-				}
+				renderChunkColumn(column, shader);
 			}
 
 		}
 	}
-	
 }
 
 void WorldRenderer::renderChunkColumn(const ChunkColumn* column, Shader& shader) const

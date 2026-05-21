@@ -19,6 +19,10 @@ private:
 
 	bool isMeshGenerated = false;
 	bool isRerenderNeeded = false;
+	bool hasPendingMeshData = false;
+
+	std::vector<Vertex> pendingVertices;
+	std::vector<uint32_t> pendingIndicies;
 
 	std::vector<std::unique_ptr<Chunk>> chunks;
 
@@ -31,7 +35,8 @@ public:
 
 	Chunk* getChunk(int yIndex) const;
 
-	void generateMeshes(const World& world);
+	void buildMeshFromPendingData(const World& world);
+	void uploadMeshToGPU();
 	void render(Shader* shader) const;
 
 	int getX() const;
