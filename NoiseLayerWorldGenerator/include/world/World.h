@@ -4,15 +4,23 @@
 #include "world/ChunkColumn.h"
 #include "world/WorldTerrainGenerator.h"
 #include "Camera.h"
+
 #include <future>
 #include <thread>
+#include <shared_mutex>
 #include <mutex>
 #include <atomic>
-#include <queue>
+
 #include <vector>
+#include <queue>
+#include <deque>
 #include <map>
+#include <unordered_set>
 
 #include "WorldConfig.h"
+
+constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 3;
+constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 30;
 
 enum class WorldState {
 	PLAYING,
@@ -27,6 +35,16 @@ struct ChunkCords {
         if (x != other.x) { return x < other.x; }
         return z < other.z;
     }
+
+    bool operator==(const ChunkCords& other) const {
+        return x == other.x && z == other.z;
+    }
+};
+
+struct ChunkCordsHash {
+    std::size_t operator()(const ChunkCords& cords) const {
+        return std::hash<int>()(cords.x) ^ (std::hash<int>()(cords.z) << 1);
+    }
 };
 
 class World
@@ -34,19 +52,34 @@ class World
 private:
 	WorldState currentState = WorldState::PLAYING;
 
+	std::vector<std::thread> workerThreads;
+	std::queue<std::function<void()>> tasksQueue;
+	std::mutex tasksQueueMutex;
+    std::condition_variable condition;
+    std::atomic<bool> stopPool;
+
     std::thread generationThread;
-	std::vector<std::future<void>> generationFutures;
+    std::atomic<int> pendingTasks = 0;
+
 	std::atomic<bool> isGenerating = false;
 	std::atomic<int> generatedChunksCount = 0;
 	int totalChunksToGenerate = 0;
     
-	std::vector<ChunkColumn*> uploadToGPUQueue;
-	std::mutex uploadQueueMutex;
+	std::deque<ChunkColumn*> uploadToGPUQueue;
+	mutable std::mutex uploadQueueMutex;
+
+    std::unordered_set<ChunkCords, ChunkCordsHash> columnsCurrentlyGenerating;
+	std::mutex generationSetMutex;
 
 	const Camera* targetCamera = nullptr;
 
     WorldTerrainGenerator* terrainGenerator = nullptr;
-    std::map<ChunkCords, std::unique_ptr<ChunkColumn>> columnsMap;
+    std::unordered_map<ChunkCords, std::unique_ptr<ChunkColumn>, ChunkCordsHash> columnsMap;
+    mutable std::shared_mutex columnsMapMutex;
+
+    void enqueueTask(std::function<void()> task);
+
+	void getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ, int& localX, int& localZ) const;
 
 public:
     World();
@@ -56,7 +89,6 @@ public:
     float getGenerationProgress() const;
 
 	void setCamera(const Camera* camera);
-
     void setTerrainGenerator(WorldTerrainGenerator* generator);
 
     void setBlock(int x, int y, int z, BlockID blockID);
@@ -65,11 +97,9 @@ public:
     void addChunkColumn(int x, int z);
     ChunkColumn* getChunkColumn(int x, int z) const;
 
-    const std::map<ChunkCords, std::unique_ptr<ChunkColumn>>& getColumnsMap() const;
-
     void generateWorldMesh();
     void render(Shader* shader) const;
     void updateWorld(); 
-    void clearWorld(); 
+    void regenerateWorld(); 
 };
 

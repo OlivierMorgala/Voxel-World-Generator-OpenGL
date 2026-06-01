@@ -6,6 +6,9 @@
 #include <memory>
 #include <cstdint>
 
+#include <atomic>
+#include <mutex>
+
 class World;
 class Chunk;
 
@@ -24,11 +27,15 @@ private:
 	std::vector<Vertex> pendingVertices;
 	std::vector<uint32_t> pendingIndicies;
 
+	std::mutex meshMutex;
+
 	std::vector<std::unique_ptr<Chunk>> chunks;
 
 public:
 	ChunkColumn(int x, int z);
 	~ChunkColumn() = default;
+
+	std::atomic<bool> isMeshUploadPending = false;
 
 	void setBlock(int x, int y, int z, BlockID blockID);
 	BlockID getBlock(int x, int y, int z) const;
@@ -41,6 +48,8 @@ public:
 
 	int getX() const;
 	int getZ() const;
+
+	std::mutex& getMeshMutex();
 
 	bool hasMesh() const;
 	bool needsRerender() const;

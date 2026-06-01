@@ -9,7 +9,7 @@ struct WorldConfig
 
 	int worldSeed = 0;
 	int worldHeightInChunks = 16;
-	int renderDistance = 16;
+	int renderDistance = 26;
 };
 
 extern WorldConfig config;

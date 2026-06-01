@@ -4,7 +4,7 @@ Camera::Camera(glm::vec3 startPosition) :
 	position(startPosition),
 	front(glm::vec3(0.0f, 0.0f, -1.0f)),
 	worldUp(glm::vec3(0.0f, 1.0f, 0.0f)),
-	movementSpeed(3.0f)
+	movementSpeed(20.0f)
 {
 	updateCameraVectors();
 }

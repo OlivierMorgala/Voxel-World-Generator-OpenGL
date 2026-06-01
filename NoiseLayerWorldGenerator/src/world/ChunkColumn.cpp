@@ -101,6 +101,8 @@ void ChunkColumn::buildMeshFromPendingData(const World& world)
 
 void ChunkColumn::uploadMeshToGPU()
 {
+	std::lock_guard<std::mutex> meshLock(meshMutex);
+
 	if (!hasPendingMeshData) { return; }
 	
 	if (!pendingVertices.empty()) {
@@ -138,6 +140,11 @@ int ChunkColumn::getX() const
 int ChunkColumn::getZ() const 
 { 
 	return columnZ; 
+}
+
+std::mutex& ChunkColumn::getMeshMutex() 
+{
+	return meshMutex;
 }
 
 bool ChunkColumn::hasMesh() const 
