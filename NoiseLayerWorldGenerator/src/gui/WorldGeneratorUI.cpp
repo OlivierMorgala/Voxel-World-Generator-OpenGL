@@ -3,13 +3,16 @@
 #include "world/generationAlgorithms/FlatFill.h"
 #include <world/WorldConfig.h>
 #include <world/World.h>
+#include <memory>   // Wymagane dla std::make_unique i std::unique_ptr
+#include <utility>  // Wymagane dla std::swap
+#include <string>   
 
 WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* world) :
-	worldGenerator(generator), 
+    worldGenerator(generator),
     world(world),
     selectedLayerIndex(-1)
 {
-	
+
 }
 
 void WorldGeneratorUI::renderImGui()
@@ -39,7 +42,7 @@ void WorldGeneratorUI::renderImGui()
     ImVec2 p_min = ImGui::GetWindowPos();
     ImVec2 p_max = ImVec2(p_min.x + 3.0f, p_min.y + screenHeight);
     ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, IM_COL32(100, 255, 100, 255));
-    
+
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
 
     ImGui::TextColored(ImVec4(1, 1, 1, 1), "Ustawienia Generatora");
@@ -56,10 +59,10 @@ void WorldGeneratorUI::renderImGui()
 
     // Początek paska zakładek
     if (ImGui::BeginTabBar("GeneratorTabs")) {
-        
+
         // ZAKŁADKA 1: WARSTWY
         if (ImGui::BeginTabItem("Warstwy")) {
-            
+
             if (ImGui::Button("+", ImVec2(30, 0))) {
                 ImGui::OpenPopup("Dodaj warstwe");
             }
@@ -71,7 +74,7 @@ void WorldGeneratorUI::renderImGui()
 
             if (ImGui::BeginPopupModal("Dodaj warstwe", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                 static char nameBuf[64] = "Nowa warstwa";
-                static int layerType = 0; 
+                static int layerType = 0;
                 static int start_y = 0, end_y = 64;
 
                 ImGui::InputText("Nazwa", nameBuf, 64);
@@ -102,15 +105,15 @@ void WorldGeneratorUI::renderImGui()
 
                 for (int i = 0; i < layers.size(); i++) {
                     ImGui::TableNextRow();
-                    
+
                     ImGui::TableNextColumn();
                     bool isSelected = (selectedLayerIndex == i);
                     std::string label = layers[i]->layerName + "##" + std::to_string(i);
-                    
+
                     // Po kliknięciu wiersza zapamiętujemy indeks i odpalamy flagę przerzucenia zakładki
                     if (ImGui::Selectable(label.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns)) {
                         selectedLayerIndex = i;
-                        activateDetailsTab = true; 
+                        activateDetailsTab = true;
                     }
 
                     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
@@ -145,7 +148,7 @@ void WorldGeneratorUI::renderImGui()
 
         // ZAKŁADKA 2: SZCZEGÓŁY ALGORYTMU
         if (selectedLayerIndex >= 0 && selectedLayerIndex < layers.size()) {
-            
+
             // Jeśli flaga jest aktywna, wymuszamy focus na tę zakładkę
             ImGuiTabItemFlags tabFlags = 0;
             if (activateDetailsTab) {
@@ -157,10 +160,10 @@ void WorldGeneratorUI::renderImGui()
                 ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Ustawienia: %s", layers[selectedLayerIndex]->layerName.c_str());
                 ImGui::Separator();
                 ImGui::Spacing();
-                
+
                 // Tutaj modyfikujesz parametry (częstotliwość, oktawy, itd.)
                 layers[selectedLayerIndex]->renderImGuiSettings();
-                
+
                 ImGui::EndTabItem();
             }
         }
