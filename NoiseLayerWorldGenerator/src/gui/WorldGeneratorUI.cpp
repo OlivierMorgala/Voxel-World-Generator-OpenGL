@@ -203,6 +203,9 @@ void WorldGeneratorUI::renderImGui()
 
     if (isLoading) { ImGui::EndDisabled(); }
 
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
     ImGui::End();
 
 }
