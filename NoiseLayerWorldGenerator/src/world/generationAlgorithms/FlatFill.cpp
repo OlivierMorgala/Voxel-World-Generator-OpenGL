@@ -23,4 +23,3 @@ void FlatFill::renderImGuiSettings() {
         ImGui::TreePop();
     }
 }
-
