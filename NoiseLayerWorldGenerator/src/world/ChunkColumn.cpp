@@ -46,15 +46,13 @@ Chunk* ChunkColumn::getChunk(int yIndex) const
 	return nullptr;
 }
 
-void ChunkColumn::generateMeshes(const World& world)
+void ChunkColumn::buildMeshFromPendingData(const World& world)
 {
-	columnMesh.reset();
-
-	std::vector<Vertex> columnVertices;
-	std::vector<uint32_t> columnIndices;
+	pendingVertices.clear();
+	pendingIndicies.clear();
 	uint32_t indexOffset = 0;
 
-	columnVertices.reserve(Chunk::CHUNK_VOLUME * 2);
+	pendingVertices.reserve(Chunk::CHUNK_VOLUME * 2);
 
 	ChunkColumn* frontColumn = world.getChunkColumn(columnX, columnZ + 1);
 	ChunkColumn* backColumn = world.getChunkColumn(columnX, columnZ - 1);
@@ -95,13 +93,31 @@ void ChunkColumn::generateMeshes(const World& world)
 
 		int chunkYOffset = i * Chunk::CHUNK_SIZE;
 
-		chunks[i]->collectMeshData(columnVertices, columnIndices, indexOffset, chunkYOffset, topNeighbor, bottomNeighbor, frontNeighbor, backNeighbor, leftNeighbor, rightNeighbor);
+		chunks[i]->collectMeshData(pendingVertices, pendingIndicies, indexOffset, chunkYOffset, topNeighbor, bottomNeighbor, frontNeighbor, backNeighbor, leftNeighbor, rightNeighbor);
 	}
 
-	if (!columnVertices.empty()) {
-		columnMesh = std::make_unique<Mesh>(columnVertices, columnIndices);
+	hasPendingMeshData = true;
+}
+
+void ChunkColumn::uploadMeshToGPU()
+{
+	std::lock_guard<std::mutex> meshLock(meshMutex);
+
+	if (!hasPendingMeshData) { return; }
+	
+	if (!pendingVertices.empty()) {
+		columnMesh = std::make_unique<Mesh>(pendingVertices, pendingIndicies);
+	}
+	else {
+		columnMesh.reset();
 	}
 
+	pendingVertices.clear();
+	pendingVertices.shrink_to_fit();
+	pendingIndicies.clear();
+	pendingIndicies.shrink_to_fit();
+
+	hasPendingMeshData = false;
 	isMeshGenerated = true;
 	isRerenderNeeded = false;
 }
@@ -124,6 +140,11 @@ int ChunkColumn::getX() const
 int ChunkColumn::getZ() const 
 { 
 	return columnZ; 
+}
+
+std::mutex& ChunkColumn::getMeshMutex() 
+{
+	return meshMutex;
 }
 
 bool ChunkColumn::hasMesh() const 

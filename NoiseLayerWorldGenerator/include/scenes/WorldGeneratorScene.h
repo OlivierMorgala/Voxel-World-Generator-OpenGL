@@ -32,13 +32,11 @@ private:
 	//Flaga która sprawdza czy sterujemy myszą lub kamerą
 	bool isCursorMode = false;
 
-	//TYMCZASOWO - test ładowania shaderów
 	std::unique_ptr<Shader> mainShader;
 
 	std::unique_ptr<World> world;
 	std::unique_ptr<WorldTerrainGenerator> worldTerrainGenerator;
 	std::unique_ptr<WorldRenderer> worldRenderer;
-	//---
 
 	std::unique_ptr<WorldGeneratorUI> worldGenUI;
 };
