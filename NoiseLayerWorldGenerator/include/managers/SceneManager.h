@@ -5,18 +5,24 @@
 
 #include"scenes\Scene.h"
 #include <memory>
+#include <vector>
 
 class SceneManager
 {
 private:
-	std::unique_ptr<Scene> currentScene;
+	std::vector<std::unique_ptr<Scene>> scenes;
+	std::unique_ptr<Scene> pendingPush;
+	bool pendingPop = false;
 
-public:
+
 	SceneManager() = default;
 	~SceneManager() = default;
+public:
+	static SceneManager& getInstance();
 
-	//Metoda służoca do ustawiania aktualnej sceny przyjmująca wskaźnik do obiektu sceny jako parametr. Ta metoda będzie odpowiedzialna za przełączanie między różnymi scenami w grze
-	void setScene(std::unique_ptr<Scene> newScene);
+	void pushScene(std::unique_ptr<Scene> newScene);
+
+	void popScene();
 
 	//Metoda służoca do aktualizacji logiki aktualnej sceny przyjmująca czas deltaTime jako parametr który reprezentuje czas jaki upłynął od ostatniej aktualizacji. Ta metoda będzie wywoływana w każdej klatce aby zapewnić płynną aktualizację logiki gry
 	void update(float deltaTime);

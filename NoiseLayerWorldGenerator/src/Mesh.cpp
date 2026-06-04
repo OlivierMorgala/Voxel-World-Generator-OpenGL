@@ -28,10 +28,6 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>&
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 	}
 
-	//Przesłanie danych indeksów z CPU do GPU poprzez wiązanie EBO i kopiowanie danych indeksów do tego bufora, co umożliwia GPU dostęp do tych danych podczas renderowania z użyciem indeksów
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
 	setupAttributes();
 
 	// Odpinanie VAO i VBO po zakończeniu konfiguracji aby zapobiec przypadkowemu modyfikowaniu ich konfiguracji

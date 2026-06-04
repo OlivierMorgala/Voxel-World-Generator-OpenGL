@@ -35,6 +35,8 @@ World::World() {
 	}
 }
 
+
+
 World::~World()
 {
 	isGenerating = false;
@@ -60,6 +62,8 @@ World::~World()
 	}
 }
 
+
+
 void World::enqueueTask(std::function<void()> task)
 {
 	pendingTasks++;
@@ -75,26 +79,40 @@ void World::enqueueTask(std::function<void()> task)
 	condition.notify_one();
 }
 
+
+
 void World::setCamera(const Camera* camera)
 {
 	targetCamera = camera;
 }
 
+
+
+
 void World::setTerrainGenerator(WorldTerrainGenerator* generator) {
 	terrainGenerator = generator;
 }
 
+
+
 WorldState World::getCurrentState() const {
 	return currentState;
 }
+
+
 
 float World::getGenerationProgress() const {
 	if (totalChunksToGenerate == 0) {
 		return 0.0f;
 	}
 
-	return static_cast<float>(generatedChunksCount.load()) / static_cast<float>(totalChunksToGenerate);
+	float totalTasks = static_cast<float>(totalChunksToGenerate * 2);
+	float completedTasks = static_cast<float>(generatedChunksCount.load() + uploadedChunksCount.load());
+
+	return completedTasks / totalTasks;
 }
+
+
 
 void World::getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ, int& localX, int& localZ) const
 {
@@ -103,6 +121,8 @@ void World::getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ,
 	localX = globalX & 15;
 	localZ = globalZ & 15;
 }
+
+
 
 void World::addChunkColumn(int x, int z)
 {
@@ -155,6 +175,8 @@ void World::addChunkColumn(int x, int z)
 	
 }
 
+
+
 ChunkColumn* World::getChunkColumn(int x, int z) const
 {
 	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
@@ -167,6 +189,8 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 
 	return nullptr;
 }
+
+
 
 void World::setBlock(int x, int y, int z, BlockID blockID)
 {
@@ -186,6 +210,8 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 		column->setBlock(localX, y, localZ, blockID);
 	}
 }
+
+
 
 BlockID World::getBlock(int x, int y, int z) const
 {
@@ -207,6 +233,8 @@ BlockID World::getBlock(int x, int y, int z) const
 	return 0;
 }
 
+
+
 void World::generateWorldMesh()
 {
 	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
@@ -217,6 +245,8 @@ void World::generateWorldMesh()
 	}
 }
 
+
+
 void World::render(Shader* shader) const
 {
 	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
@@ -224,6 +254,8 @@ void World::render(Shader* shader) const
 		column->render(shader);
 	}
 }
+
+
 
 void World::updateWorld()
 {
@@ -240,6 +272,7 @@ void World::updateWorld()
 
 			chunksToUploadThisFrame.push_back(column);
 			chunksProcessedThisFrame++;
+			uploadedChunksCount++;
 		}
 	}
 
@@ -247,12 +280,14 @@ void World::updateWorld()
 		column->uploadMeshToGPU();
 	}
 
-	if (currentState == WorldState::LOADING && generatedChunksCount >= totalChunksToGenerate) {
+	if (currentState == WorldState::LOADING && uploadedChunksCount >= totalChunksToGenerate) {
 		currentState = WorldState::PLAYING;
 		std::cout << "+[WORLD] Zakonczono generowanie swiata!" << std::endl;
 	}
 
 	if (currentState == WorldState::PLAYING) {
+
+		if(!targetCamera) { return; }
 		int cameraColumnX = static_cast<int>(std::floor(targetCamera->position.x / Chunk::CHUNK_SIZE));
 		int cameraColumnZ = static_cast<int>(std::floor(targetCamera->position.z / Chunk::CHUNK_SIZE));
 
@@ -307,8 +342,18 @@ void World::updateWorld()
 				});
 		}
 
+
+
+
+		//UNLOAD
+
+
+
+
 	}
 }
+
+
 
 void World::regenerateWorld()
 {
@@ -332,7 +377,7 @@ void World::regenerateWorld()
 	}
 
 	generatedChunksCount = 0;
-	totalChunksToGenerate = (2 * config.renderDistance + 1) * (2 * config.renderDistance + 1);
+	uploadedChunksCount = 0;
 	currentState = WorldState::LOADING;
 	isGenerating = true;
 

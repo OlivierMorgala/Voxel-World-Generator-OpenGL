@@ -4,7 +4,6 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
-
 #include "managers/InputManager.h"
 #include "managers/SceneManager.h"
 #include "managers/WindowManager.h"
@@ -24,6 +23,9 @@ int main() {
 	}
 	glfwMakeContextCurrent(window);
 
+	//Wyłączenie v-sync co pozwala na renderowanie klatek tak szybko jak to możliwe bez ograniczeń
+	glfwSwapInterval(1);
+
 	//Ustawienie głównego okna w WindowManagerze
 	WindowManager::getInstance().setMainWindow(window);
 
@@ -31,6 +33,11 @@ int main() {
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		return -1;
 	}
+
+	//Ustawienie callbacków dla klawiatury i myszy które będą aktualizować stany klawiszy i przycisków myszy w InputManagerze co pozwoli na łatwe sprawdzanie tych stanów w logice gry
+	glfwSetKeyCallback(window, InputManager::keyCallback);
+	glfwSetMouseButtonCallback(window, InputManager::mouseButtonCallback);
+	glfwSetCursorPosCallback(window, InputManager::cursorPositionCallback);
 	
 	//Konfiguracja ImGui
 	IMGUI_CHECKVERSION();
@@ -41,13 +48,8 @@ int main() {
 	ImGui::StyleColorsDark();
 
 	//Inicjalizacja backendów ImGui dla GLFW i OpenGL3
-	ImGui_ImplGlfw_InitForOpenGL(window, true); 
+	ImGui_ImplGlfw_InitForOpenGL(window, false); 
 	ImGui_ImplOpenGL3_Init("#version 330");
-
-	//Ustawienie callbacków dla klawiatury i myszy które będą aktualizować stany klawiszy i przycisków myszy w InputManagerze co pozwoli na łatwe sprawdzanie tych stanów w logice gry
-	glfwSetKeyCallback(window, InputManager::keyCallback);
-	glfwSetMouseButtonCallback(window, InputManager::mouseButtonCallback);
-	glfwSetCursorPosCallback(window, InputManager::cursorPositionCallback);	
 
 	//Włączenie testu głębokości co pozwala na poprawne renderowanie obiektów w 3D z uwzględnieniem ich odległości od kamery
 	glEnable(GL_DEPTH_TEST);
@@ -58,8 +60,7 @@ int main() {
 	glFrontFace(GL_CCW); // Ustawienie kierunku wierzchołków przeciwnych do ruchu wskazówek zegara
 
 	//Inicjalizaca sceny startowej programu
-	SceneManager sceneManager;
-	sceneManager.setScene(std::make_unique<WorldGeneratorScene>());
+	SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>());
 
 	float lastFrameTime = 0.0f;
 
@@ -81,8 +82,8 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//Aktualizacja logiki gry i renderowanie sceny
-		sceneManager.update(deltaTime);
-		sceneManager.render();
+		SceneManager::getInstance().update(deltaTime);
+		SceneManager::getInstance().render();
 
 		//Wyświetlanie renderowanej sceny na ekranie
 		glfwSwapBuffers(window);
@@ -93,4 +94,5 @@ int main() {
     ImGui::DestroyContext();
     glfwTerminate();
    
+	return 0;
 }

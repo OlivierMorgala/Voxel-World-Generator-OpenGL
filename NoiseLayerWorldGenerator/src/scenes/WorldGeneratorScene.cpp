@@ -1,5 +1,8 @@
 #include "scenes\WorldGeneratorScene.h"
-
+#include "scenes\LoadingScene.h"
+#include "managers\SceneManager.h"
+#include "world\generationAlgorithms\PerlinNoise2D.h"
+#include "world\generationAlgorithms\FlatFill.h"
 
 void WorldGeneratorScene::onEnter()
 {
@@ -12,28 +15,39 @@ void WorldGeneratorScene::onEnter()
 	// Inicjalizacja kamery na pozycji (0, 0, 1) - tymczasowa wartość później bedzie trzeba ja ustalać wzgledem wytworzonego terenu
 	camera = std::make_unique<Camera>(glm::vec3(8.0f, 40.0f, 8.0f));
 
-	//TYMCZASOWO - test renderowania śiwata
+	//TYMCZASOWO
     BlockDatabase::init();
+    //---
 
     mainShader = std::make_unique<Shader>("shaders/test.vert", "shaders/test.frag");
-    worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
-    world = std::make_unique<World>();
-	world->setCamera(camera.get());
-    world->setTerrainGenerator(worldTerrainGenerator.get());
-    worldRenderer = std::make_unique<WorldRenderer>();
+    
+	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
 
+	worldTerrainGenerator->generationLayers.push_back(std::make_unique<FlatFill>("Flat", 60, 70));
+    worldTerrainGenerator->generationLayers.push_back(std::make_unique<PerlinNoise2D>("Perlin", 5, 50, 12345, 0.090, 0.700, 6, 1.740, 0.400));
+
+    world = std::make_unique<World>();
+    world->setCamera(camera.get());
+    world->setTerrainGenerator(worldTerrainGenerator.get());
+
+	worldRenderer = std::make_unique<WorldRenderer>();
     worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
-    //---
+
+	world->regenerateWorld();
+	SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world.get()));
 }
+
+
 
 void WorldGeneratorScene::onExit()
 {
     if (window) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
-
 	std::cout << "-[Scene] UNLOADED: WorldGeneratorScene" << std::endl;
 }
+
+
 
 void WorldGeneratorScene::onUpdate(float deltaTime)
 {
@@ -61,36 +75,38 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
     }
 }
 
+
+
 void WorldGeneratorScene::render()
 {
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);           //do zmiany --------------
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	// Ustawienie macierzy widoku kamery w shaderze
-	glm::mat4 view = camera->getViewMatrix();
-	mainShader->setMatrix4("view", view);
-
-    //TYMCZASOWO - test ładowania shaderów
     if (!world || !worldRenderer || !mainShader) return;
 
-	GLFWwindow* window = WindowManager::getInstance().getMainWindow();
+    glm::mat4 view = camera->getViewMatrix();
+	mainShader->setMatrix4("view", view);
+
 
     if (window) {
         int width;
         int height;
         glfwGetFramebufferSize(window, &width, &height);
+
+        if (height == 0) { height = 1; }
         float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        worldRenderer->render(*world, *camera, *mainShader, aspectRatio);
+
 
         if (world->getCurrentState() == WorldState::PLAYING) {
             worldRenderer->render(*world, *camera, *mainShader, aspectRatio);
         }
     }
-    //---
 }
+
+
 
 void WorldGeneratorScene::onImGuiRender()
 {

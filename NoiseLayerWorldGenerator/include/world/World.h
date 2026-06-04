@@ -16,11 +16,12 @@
 #include <deque>
 #include <map>
 #include <unordered_set>
+#include <algorithm>
 
 #include "WorldConfig.h"
 
-constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 3;
-constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 30;
+constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 1;
+constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 8;
 
 enum class WorldState {
 	PLAYING,
@@ -63,7 +64,8 @@ private:
 
 	std::atomic<bool> isGenerating = false;
 	std::atomic<int> generatedChunksCount = 0;
-	int totalChunksToGenerate = 0;
+	std::atomic<int> uploadedChunksCount = 0;
+	int totalChunksToGenerate = (2 * config.renderDistance + 1) * (2 * config.renderDistance + 1);
     
 	std::deque<ChunkColumn*> uploadToGPUQueue;
 	mutable std::mutex uploadQueueMutex;

@@ -3,6 +3,8 @@
 #include "world/generationAlgorithms/FlatFill.h"
 #include <world/WorldConfig.h>
 #include <world/World.h>
+#include <managers/SceneManager.h>
+#include <scenes/LoadingScene.h>
 
 WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* world) :
 	worldGenerator(generator), 
@@ -76,40 +78,15 @@ void WorldGeneratorUI::renderImGui()
         ImGui::TextDisabled("No layer selected");
     }
 
-    ImGui::SetCursorPosY(screenHeight - 40);
-
-
     if (isLoading) { ImGui::BeginDisabled(); }
 
     if (ImGui::Button("REGENERATE WORLD", ImVec2(-FLT_MIN, 30))) {
 		world->regenerateWorld();
+		SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world));
     }
 
     if (isLoading) { ImGui::EndDisabled(); }
 
-
     ImGui::End();
 
-    if (isLoading) {
-        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-
-        ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration |
-            ImGuiWindowFlags_AlwaysAutoResize |
-            ImGuiWindowFlags_NoSavedSettings |
-            ImGuiWindowFlags_NoFocusOnAppearing |
-            ImGuiWindowFlags_NoNav |
-            ImGuiWindowFlags_NoMove;
-
-        ImGui::SetNextWindowBgAlpha(0.85f);
-
-        if (ImGui::Begin("LoadingOverlay", nullptr, overlayFlags)) {
-            ImGui::Text("Generating World... Please Wait");
-            ImGui::Spacing();
-
-            float progress = world->getGenerationProgress();
-            ImGui::ProgressBar(progress, ImVec2(350.0f, 25.0f));
-        }
-        ImGui::End();
-    }
 }

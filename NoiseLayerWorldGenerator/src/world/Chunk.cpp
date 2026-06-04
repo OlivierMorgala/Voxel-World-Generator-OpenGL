@@ -142,6 +142,8 @@ void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>
 
 void Chunk::setBlock(int x, int y, int z, BlockID blockID)
 {
+	if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= CHUNK_SIZE || z < 0 || z >= CHUNK_SIZE) { return; }
+
 	//Sprawdzamy czy tablica bloków jest już zainicjalizowana
 	if (blocksTable == nullptr) {
 		//Jeśli nie jest a ID bloku który chcemy ustawić jest taki sam jak fillBlockID to
