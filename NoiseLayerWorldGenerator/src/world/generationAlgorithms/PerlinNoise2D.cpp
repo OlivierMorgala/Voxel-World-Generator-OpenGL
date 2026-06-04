@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <random>
 
-// Definicja gradientów
+// Definicja gradientow
 static vector2 gradients[8] = {
     {0,1}, {1,1}, {1,0}, {0,-1}, {-1,-1}, {-1,0}, {1,-1}, {-1,1},
 };
@@ -44,7 +44,7 @@ void PerlinNoise2D::applyToColumn(ChunkColumn& column) {
 
 void PerlinNoise2D::renderImGuiSettings() {
     if (ImGui::TreeNode(layerName.c_str())) {
-        ImGui::DragFloat("Czêstotliwoœæ", &frequencyPerlinNoise, 0.01f);
+        ImGui::DragFloat("Czï¿½stotliwoï¿½ï¿½", &frequencyPerlinNoise, 0.01f);
         ImGui::DragFloat("Amplituda", &amplitudePerlinNoise, 0.1f);
         ImGui::DragInt("Oktawy", &octavesPerlinNoise, 1, 1, 8);
         ImGui::DragFloat("Zmiana Freq", &frequencyChange, 0.01f);
