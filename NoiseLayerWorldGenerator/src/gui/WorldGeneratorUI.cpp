@@ -78,22 +78,112 @@ void WorldGeneratorUI::renderImGui()
                 static int layerType = 0;
                 static int start_y = 0, end_y = 64;
 
+                static int currentBlockIndex = 1;
+				static bool isCreatingNewBlock = false;
+
+				static char newBlockName[64] = "New Block";
+				static bool newBlockCollidable = true;
+				static bool newBlockIsTransparent = false;
+				static float newBlockColor[3] = { 0.5f, 0.5f, 0.5f };
+
                 ImGui::InputText("Nazwa", nameBuf, 64);
                 ImGui::Combo("Algorytm", &layerType, "Perlin Noise\0Flat Fill\0");
                 ImGui::InputInt("Start Y", &start_y);
                 ImGui::InputInt("End Y", &end_y);
+                ImGui::Separator();
+
+                if (!isCreatingNewBlock) {
+                    const auto& blockTypes = BlockDatabase::getAllBlocks();
+
+                    if (currentBlockIndex >= blockTypes.size()) { currentBlockIndex = 1; }
+
+                    if (ImGui::BeginCombo("Layer Block", blockTypes[currentBlockIndex].name.c_str())) {
+
+                        for (int i = 1; i < blockTypes.size(); i++) {
+							const bool isSelected = (currentBlockIndex == i);
+
+                            ImVec4 col(blockTypes[i].color.x, blockTypes[i].color.y, blockTypes[i].color.z, 1.0f);
+
+							ImGui::PushID(i);
+
+							ImGui::ColorButton("##color", col, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(15, 15));
+                            ImGui::SameLine();
+
+                            if (ImGui::Selectable(blockTypes[i].name.c_str(), isSelected)) {
+                                currentBlockIndex = i;
+                            }
+
+							ImGui::PopID();
+
+                            if (isSelected) { ImGui::SetItemDefaultFocus(); }
+                        }
+
+                        ImGui::Separator();
+                        if (ImGui::Selectable("+ADD+")) {
+                            isCreatingNewBlock = true;
+                        }
+
+                        ImGui::EndCombo();
+                    }
+                }
+                else {
+
+					ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1), "Creating new block...");
+                    ImGui::Indent();
+
+					ImGui::InputText("Block Name", newBlockName, 64);
+					ImGui::ColorEdit3("Block Color", newBlockColor);
+					ImGui::Checkbox("Collidable", &newBlockCollidable);
+					ImGui::Checkbox("Transparent", &newBlockIsTransparent);
+
+					bool isLimitReached = (BlockDatabase::getAllBlocks().size() >= 255);
+
+                    if (isLimitReached) {
+                        ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f), "Maximum number of block types (256) reached.");
+                        ImGui::BeginDisabled();
+                    }
+
+                    if (ImGui::Button("Save Block")) {
+						BlockID newID = BlockDatabase::registerBlockData(newBlockName, newBlockCollidable, newBlockIsTransparent, glm::vec3(newBlockColor[0], newBlockColor[1], newBlockColor[2]));
+						
+						currentBlockIndex = newID;
+						isCreatingNewBlock = false;
+                    }
+
+                    if (isLimitReached) {
+						ImGui::EndDisabled();
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("Cancel")) {
+						isCreatingNewBlock = false;
+                    }
+                    ImGui::Unindent();
+                }
+
+                ImGui::Separator();
+
+                if (isCreatingNewBlock) { ImGui::BeginDisabled(); }
+
 
                 if (ImGui::Button("Dodaj", ImVec2(120, 0))) {
                     if (layerType == 0) {
-                        layers.push_back(std::make_unique<PerlinNoise2D>(nameBuf, start_y, end_y, globalSeed));
+                        layers.push_back(std::make_unique<PerlinNoise2D>(nameBuf, start_y, end_y, globalSeed, currentBlockIndex));
                     }
                     else if (layerType == 1) {
-                        layers.push_back(std::make_unique<FlatFill>(nameBuf, start_y, end_y));
+                        layers.push_back(std::make_unique<FlatFill>(nameBuf, start_y, end_y, currentBlockIndex));
                     }
                     ImGui::CloseCurrentPopup();
                 }
+
+                if(isCreatingNewBlock) { ImGui::EndDisabled(); }
+
                 ImGui::SameLine();
-                if (ImGui::Button("Anuluj", ImVec2(120, 0))) ImGui::CloseCurrentPopup();
+                if (ImGui::Button("Anuluj", ImVec2(120, 0))) {
+				    isCreatingNewBlock = false; 
+                    ImGui::CloseCurrentPopup();
+                }
+
                 ImGui::EndPopup();
             }
 
@@ -112,7 +202,7 @@ void WorldGeneratorUI::renderImGui()
                     std::string label = layers[i]->layerName + "##" + std::to_string(i);
 
                     // Po kliknięciu wiersza zapamiętujemy indeks i odpalamy flagę przerzucenia zakładki
-                    if (ImGui::Selectable(label.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns)) {
+                    if (ImGui::Selectable(label.c_str(), isSelected)) {
                         selectedLayerIndex = i;
                         activateDetailsTab = true;
                     }

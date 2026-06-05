@@ -32,3 +32,8 @@ bool Input::isMouseOverUI()
 {
 	return ImGui::GetIO().WantCaptureMouse;
 }
+
+bool Input::isKeyboardInputCapturedByUI()
+{
+	return ImGui::GetIO().WantCaptureKeyboard;
+}

@@ -343,11 +343,31 @@ void World::updateWorld()
 		}
 
 
+		int unloadDistance = config.renderDistance + 2;
+		std::vector<ChunkCords> chunksToUnload;
+		{
+			std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+			for(const auto& [coords, column] : columnsMap) {
+				if(std::abs(coords.x - cameraColumnX) > unloadDistance || std::abs(coords.z - cameraColumnZ) > unloadDistance) {
+					chunksToUnload.push_back(coords);
+				}
+			}
+		}
 
+		if (!chunksToUnload.empty()) {
+			std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+			std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
 
-		//UNLOAD
+			for (const auto& coords : chunksToUnload) {
+				ChunkColumn* columnPtr = columnsMap[coords].get();
 
-
+				auto it = std::find(uploadToGPUQueue.begin(), uploadToGPUQueue.end(), columnPtr);
+				if (it != uploadToGPUQueue.end()) {
+					uploadToGPUQueue.erase(it);
+				}
+				columnsMap.erase(coords);
+			}
+		}
 
 
 	}
@@ -456,7 +476,7 @@ void World::regenerateWorld()
 						}
 					}
 
-				});
+			});
 		}
 	});
 

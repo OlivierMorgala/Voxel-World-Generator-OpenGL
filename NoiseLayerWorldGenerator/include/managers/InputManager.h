@@ -29,6 +29,8 @@ public:
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
+	static void charCallback(GLFWwindow* window, unsigned int code);
+	static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
 	// Metoda do sprawdzania stanu klawiszy
 	static bool isKeyPressed(int key);

@@ -9,10 +9,10 @@ static vector2 gradients[8] = {
     {0,1}, {1,1}, {1,0}, {0,-1}, {-1,-1}, {-1,0}, {1,-1}, {-1,1},
 };
 
-PerlinNoise2D::PerlinNoise2D(std::string name, int startY, int endY, unsigned seed,
+PerlinNoise2D::PerlinNoise2D(std::string name, int startY, int endY, unsigned seed, BlockID blockID,
     float frequency, float amplitude, int octaves,
     float freqchange, float ampchange)
-    : GenerationAlgorithm(name, startY, endY), // Inicjalizacja klasy bazowej
+    : GenerationAlgorithm(name, startY, endY, blockID), // Inicjalizacja klasy bazowej
     frequencyPerlinNoise(frequency), amplitudePerlinNoise(amplitude),
     octavesPerlinNoise(octaves), frequencyChange(freqchange), amplitudeChange(ampchange)
 {
@@ -35,8 +35,10 @@ void PerlinNoise2D::applyToColumn(ChunkColumn& column) {
 
             int height = startY + static_cast<int>((noise + 1.0f) * 0.5f * (endY - startY));
 
+			height = std::clamp(height, startY, endY);
+
             for (int y = 0; y <= height; y++) {
-                column.setBlock(x, y, z, 1);
+                column.setBlock(x, y, z, layerBlockID);
             }
         }
     }
@@ -67,6 +69,7 @@ float PerlinNoise2D::PerlinNoiseFunction(float x, float y) {
     float TotalNoiseValue = 0.0;
     float frequency = frequencyPerlinNoise;
     float amplitude = amplitudePerlinNoise;
+	float maxAmplitude = 0.0f;
 
     for (int i = 0; i < octavesPerlinNoise; i++) {
         float fx = x * frequency;
@@ -101,9 +104,11 @@ float PerlinNoise2D::PerlinNoiseFunction(float x, float y) {
 
         TotalNoiseValue += interpolationValue * amplitude;
 
+		maxAmplitude += amplitude;
+
         frequency *= frequencyChange;
         amplitude *= amplitudeChange;
     }
 
-    return TotalNoiseValue;
+    return TotalNoiseValue / maxAmplitude;
 }

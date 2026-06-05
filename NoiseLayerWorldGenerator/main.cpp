@@ -38,6 +38,8 @@ int main() {
 	glfwSetKeyCallback(window, InputManager::keyCallback);
 	glfwSetMouseButtonCallback(window, InputManager::mouseButtonCallback);
 	glfwSetCursorPosCallback(window, InputManager::cursorPositionCallback);
+	glfwSetCharCallback(window, InputManager::charCallback);
+	glfwSetScrollCallback(window, InputManager::scrollCallback);
 	
 	//Konfiguracja ImGui
 	IMGUI_CHECKVERSION();

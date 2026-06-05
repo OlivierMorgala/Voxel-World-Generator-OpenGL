@@ -1,7 +1,7 @@
 #include "world/generationAlgorithms/FlatFill.h"
 
-FlatFill::FlatFill(std::string name, int startY, int endY)
-    : GenerationAlgorithm(name, startY, endY)
+FlatFill::FlatFill(std::string name, int startY, int endY, BlockID blockID)
+    : GenerationAlgorithm(name, startY, endY, blockID)
 {
 
 }
@@ -10,7 +10,7 @@ void FlatFill::applyToColumn(ChunkColumn& column) {
     for (int x = 0; x < 16; x++) {
         for (int z = 0; z < 16; z++) {
             for (int y = startY; y <= endY; y++) {
-                column.setBlock(x, y, z, 1);
+                column.setBlock(x, y, z, layerBlockID);
             }
         }
     }

@@ -23,8 +23,8 @@ void WorldGeneratorScene::onEnter()
     
 	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
 
-	worldTerrainGenerator->generationLayers.push_back(std::make_unique<FlatFill>("Flat", 60, 70));
-    worldTerrainGenerator->generationLayers.push_back(std::make_unique<PerlinNoise2D>("Perlin", 5, 50, 12345, 0.090, 0.700, 6, 1.740, 0.400));
+	worldTerrainGenerator->generationLayers.push_back(std::make_unique<FlatFill>("Flat", 60, 70, 2));
+    worldTerrainGenerator->generationLayers.push_back(std::make_unique<PerlinNoise2D>("Perlin", 5, 50, 12345, 1, 0.090, 0.700, 6, 1.740, 0.400));
 
     world = std::make_unique<World>();
     world->setCamera(camera.get());
@@ -53,16 +53,25 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
 {
 	if (!camera || !window) { return; }
 
-    if (Input::isKeyPressed(GLFW_KEY_W)) camera->processKeyboardInput(Camera::FORWARD, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_S)) camera->processKeyboardInput(Camera::BACKWARD, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_A)) camera->processKeyboardInput(Camera::LEFT, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_D)) camera->processKeyboardInput(Camera::RIGHT, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_LEFT_SHIFT)) camera->processKeyboardInput(Camera::DOWN, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_SPACE)) camera->processKeyboardInput(Camera::UP, deltaTime);
+    if (!isCursorMode) {
+        if (Input::isKeyPressed(GLFW_KEY_W)) camera->processKeyboardInput(Camera::FORWARD, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_S)) camera->processKeyboardInput(Camera::BACKWARD, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_A)) camera->processKeyboardInput(Camera::LEFT, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_D)) camera->processKeyboardInput(Camera::RIGHT, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_LEFT_SHIFT)) camera->processKeyboardInput(Camera::DOWN, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_SPACE)) camera->processKeyboardInput(Camera::UP, deltaTime);
+    }
 
     if (Input::isKeyJustPressed(GLFW_KEY_ESCAPE)) {
         isCursorMode = !isCursorMode;
         glfwSetInputMode(window, GLFW_CURSOR, isCursorMode ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+
+        if (isCursorMode) {
+			ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+        }
+        else {
+            ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        }
     }
 
     if (!isCursorMode) {
@@ -94,6 +103,8 @@ void WorldGeneratorScene::render()
 
         if (height == 0) { height = 1; }
         float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+        glViewport(0, 0, width, height);
 
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -136,6 +147,43 @@ void WorldGeneratorScene::onImGuiRender()
         ImGui::Separator();
     }
     ImGui::End();
+
+
+
+    ImGuiWindowFlags hintFlags = ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoMove;
+
+    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+    ImGui::SetNextWindowPos(ImVec2(screenSize.x * 0.5f, 5.0f), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+
+    ImGui::SetNextWindowBgAlpha(0.65f);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
+
+    if (ImGui::Begin("EscHintOverlay", nullptr, hintFlags)) {
+
+        ImGui::SetWindowFontScale(1.3f);
+
+        if (isCursorMode) {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Press [ESC] to exit world edit mode");
+        }
+        else {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Press [ESC] to enter world edit mode");
+        }
+
+    }
+    ImGui::End();
+
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
+
 
     if (worldGenUI) {
         worldGenUI->renderImGui();

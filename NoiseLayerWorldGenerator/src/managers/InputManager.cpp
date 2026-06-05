@@ -94,6 +94,14 @@ void InputManager::cursorPositionCallback(GLFWwindow* window, double xpos, doubl
 	mouseY = ypos;
 }
 
+void InputManager::charCallback(GLFWwindow* window, unsigned int code) {
+	ImGui_ImplGlfw_CharCallback(window, code);
+}
+
+void InputManager::scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
+	ImGui_ImplGlfw_ScrollCallback(window, xOffset, yOffset);
+}
+
 void InputManager::setMouseSensitivity(float sensitivityX, float sensitivityY) {
 	sensitivity = glm::vec2(sensitivityX, sensitivityY);
 }

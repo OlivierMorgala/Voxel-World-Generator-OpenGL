@@ -16,7 +16,7 @@ public:
     float frequencyChange; // Decyduje jak zmienia sie frequency po kazdej oktawie
     float amplitudeChange; // Decyduje jak zmienia sie amplitude po kazdej oktawie
 
-    PerlinNoise2D(std::string name, int startY, int endY, unsigned seed = 1234,
+    PerlinNoise2D(std::string name, int startY, int endY, unsigned seed, BlockID blockID,
         float frequency = 1.0f, float amplitude = 1.0f,
         int octaves = 4, float freqchange = 2.0f, float ampchange = 0.5f);
 
