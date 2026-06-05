@@ -1,6 +1,6 @@
 #include "Raycasting.h"
 
-Raycast::Raycast(float maxDistance, World* World) : maxDistance(maxDistance), world(World) {}
+Raycast::Raycast(float maxDistance, World* World) : maxDistance(maxDistance), world(World), lastHitTime(std::chrono::steady_clock::now()) {}
 void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& CameraFront)
 {
 
@@ -96,9 +96,17 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 
 		if (currentBlockID != 0) // CZY TRAFIONO BLOK 
 		{
+			auto now = std::chrono::steady_clock::now();
+
+			if (now - lastHitTime >= hitCooldown)
+			{
+			
+			std::cout << "GIGA ASIGMA";
+			lastHitTime = now;
+			}
+
 			HitBlockPosition = { x,y,z };
 			BlockHit = true;
-			std::cout << "GIGA ASIGMA";
 			break;
 		}
 
