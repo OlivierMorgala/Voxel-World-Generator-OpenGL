@@ -14,9 +14,9 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 	int StepZ{};
 
 	/// DELTA ILE DLUGOSCI PROMIENIA MIESCI SIE W JEDNYM BLOKU
-	float DeltaX = abs(1.0f / CameraFront.x); // ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI X 
-	float DeltaY = abs(1.0f / CameraFront.y); // ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI Y
-	float DeltaZ = abs(1.0f / CameraFront.z); // ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI Z
+	float DeltaX = (CameraFront.x ==  0) ? 1e30f : std::abs(1.0f / CameraFront.x);   // ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI X 
+	float DeltaY = (CameraFront.y == 0) ? 1e30f : std::abs(1.0f / CameraFront.y);// ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI Y
+	float DeltaZ = (CameraFront.z == 0) ? 1e30f : std::abs(1.0f / CameraFront.z); // ODLEGLOSC O ILE BLOKOW MUSI PRZESUNAC SIE PROMIEN ABY PRZESUNAC SIE O JEDEN BLOK W OSI Z
 
 	float SideDistX{};
 	float SideDistY{};
@@ -65,27 +65,27 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 	}
 
 	float distance{};
-
+	BlockHit = false;
 	while (distance <= MaxDistance)
 	{
-		BlockHit = false;
-		if (SideDistX < SideDistY && SideDistX < SideDistZ)
+		
+		if (SideDistX <= SideDistY && SideDistX <= SideDistZ)
 		{
 			x += StepX;
 			SideDistX += DeltaX;
-			distance = SideDistX - DeltaX;
+			distance += DeltaX;
 		}
-		else if (SideDistY < SideDistX && SideDistY < SideDistZ)
+		else if (SideDistY <= SideDistX && SideDistY <= SideDistZ)
 		{
 			y += StepY;
 			SideDistY += DeltaY;
-			distance = SideDistY - DeltaY;
+			distance += DeltaY;
 		}
 		else
 		{
 			z += StepZ;
 			SideDistZ += DeltaZ;
-			distance = SideDistZ - DeltaZ;
+			distance += DeltaZ;
 		}
 
 		if (distance > MaxDistance)
@@ -101,11 +101,11 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 			if (now - lastHitTime >= hitCooldown)
 			{
 			
-			std::cout << "GIGA ASIGMA";
+				std::cout << "x:" << x << "  Y:" << y << " z:"<< z << " " << std::endl;
 			lastHitTime = now;
 			}
 
-			HitBlockPosition = { x,y,z };
+			HitBlockPosition = {x,y,z};
 			BlockHit = true;
 			break;
 		}

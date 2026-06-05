@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\BlockPlaceDestroy.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\Raycasting.cpp" />
     <ClCompile Include="src\Camera.cpp" />
@@ -52,6 +53,7 @@
     <ClCompile Include="src\world\WorldTerrainGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\BlockPlaceDestroy.h" />
     <ClInclude Include="include\Camera.h" />
     <ClInclude Include="include\gui\WorldGeneratorUI.h" />
     <ClInclude Include="include\Input.h" />

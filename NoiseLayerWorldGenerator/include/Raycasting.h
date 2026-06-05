@@ -14,7 +14,7 @@ class Raycast
 private:
 	World* world;
 	std::chrono::steady_clock::time_point lastHitTime;
-	std::chrono::milliseconds hitCooldown{ 100 }; 
+	std::chrono::milliseconds hitCooldown{ 1000 }; 
 public:
 	float maxDistance;
 	bool BlockHit;
