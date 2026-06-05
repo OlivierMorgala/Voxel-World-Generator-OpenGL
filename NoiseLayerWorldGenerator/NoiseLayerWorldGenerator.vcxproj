@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\Raycasting.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glad\glad.c" />
     <ClCompile Include="src\gui\WorldGeneratorUI.cpp" />
@@ -72,6 +73,7 @@
     <ClInclude Include="include\world\WorldConfig.h" />
     <ClInclude Include="include\world\WorldRenderer.h" />
     <ClInclude Include="include\world\WorldTerrainGenerator.h" />
+    <ClInclude Include="include\Raycasting.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\test.frag" />
@@ -101,7 +103,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">

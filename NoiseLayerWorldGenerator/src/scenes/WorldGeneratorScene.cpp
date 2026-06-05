@@ -33,6 +33,9 @@ void WorldGeneratorScene::onEnter()
 	worldRenderer = std::make_unique<WorldRenderer>();
     worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
 
+    // Raycast
+    raycast = std::make_unique<Raycast>(20, world.get());
+
 	world->regenerateWorld();
 	SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world.get()));
 }
@@ -72,6 +75,11 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
 
     if (world) {
         world->updateWorld();
+    }
+
+    if (raycast)
+    {
+        raycast->RaycastDDA(camera->position, camera->front);
     }
 }
 
