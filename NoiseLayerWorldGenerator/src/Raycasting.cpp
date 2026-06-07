@@ -1,6 +1,6 @@
 #include "Raycasting.h"
 
-Raycast::Raycast(float maxDistance, World* World) : maxDistance(maxDistance), world(World), lastHitTime(std::chrono::steady_clock::now()) {}
+Raycast::Raycast(float maxDistance, World* World, Shader* Shader) : maxDistance(maxDistance), world(World), shader(Shader), lastHitTime(std::chrono::steady_clock::now()) {}
 void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& CameraFront)
 {
 
@@ -66,6 +66,8 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 
 	float distance{};
 	BlockHit = false;
+	
+	shader->setValue("BlockHasHit", 0);
 	while (distance <= MaxDistance)
 	{
 		
@@ -100,14 +102,16 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 
 			if (now - lastHitTime >= hitCooldown)
 			{
-			
-				std::cout << "x:" << x << "  Y:" << y << " z:"<< z << " " << std::endl;
 			lastHitTime = now;
 			}
 
-			HitBlockPosition = {x,y,z};
+			HitBlockPosition = { x,y,z };
+			shader->setValueVec3("blockHitPosition", HitBlockPosition);
+			shader->setValue("BlockHasHit", 1.0f);
 			BlockHit = true;
 			break;
+
+			
 		}
 
 

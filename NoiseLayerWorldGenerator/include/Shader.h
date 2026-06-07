@@ -28,6 +28,8 @@ public:
 	//Funkcja pomocnicza które pozwalaja na przekazywanie danych z CPU do GPU poprzez uniformy shaderów umożliwiając dynamiczną kontrolę nad zachowaniem shaderów podczas renderowania
 	void setValue(const std::string& name, float value) const;
 
+	void setValueVec3(const std::string& name, glm::vec3& value) const;
+
 	void setMatrix4(const std::string& name, const glm::mat4& mat) const;
 
 	unsigned int getID();
