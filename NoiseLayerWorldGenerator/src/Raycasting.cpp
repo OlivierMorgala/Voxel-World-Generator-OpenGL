@@ -98,6 +98,7 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 
 		if (currentBlockID != 0) // CZY TRAFIONO BLOK 
 		{
+			// JESLI TRAFIONO BLOK TO ODCZEKUJEMY CHWILE A POTEM AKTUALIZUJEMY INFORMACJE O POZYCJI TRAFIONEGO BLOKU ORAZ PRZESY£AMY SHADEROWI INFORMACJE
 			auto now = std::chrono::steady_clock::now();
 
 			if (now - lastHitTime >= hitCooldown)

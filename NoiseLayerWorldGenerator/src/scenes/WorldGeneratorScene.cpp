@@ -34,7 +34,7 @@ void WorldGeneratorScene::onEnter()
     worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
 
     // Raycast
-    raycast = std::make_unique<Raycast>(20, world.get(), mainShader.get());
+    raycast = std::make_unique<Raycast>(80, world.get(), mainShader.get());
 
 	world->regenerateWorld();
 	SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world.get()));
