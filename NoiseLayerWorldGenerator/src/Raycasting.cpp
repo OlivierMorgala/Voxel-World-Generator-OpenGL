@@ -1,6 +1,15 @@
 #include "Raycasting.h"
 
 Raycast::Raycast(float maxDistance, World* World, Shader* Shader) : maxDistance(maxDistance), world(World), shader(Shader), lastHitTime(std::chrono::steady_clock::now()) {}
+
+
+World* Raycast::GetWorld()
+{
+	return world;
+}
+
+
+
 void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& CameraFront)
 {
 

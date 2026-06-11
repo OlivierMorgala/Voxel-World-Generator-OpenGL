@@ -34,7 +34,10 @@ void WorldGeneratorScene::onEnter()
     worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
 
     // Raycast
-    raycast = std::make_unique<Raycast>(80, world.get(), mainShader.get());
+    raycast = std::make_unique<Raycast>(10, world.get(), mainShader.get());
+
+    // KLASA ODPOWIADAJACA ZA STAWIANIE I NISZCZENIE BLOKOW
+    blockPlaceDestroy = std::make_unique<BlockPlaceDestroy>(raycast.get());
 
 	world->regenerateWorld();
 	SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world.get()));
@@ -80,6 +83,15 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
     if (raycast)
     {
         raycast->RaycastDDA(camera->position, camera->front);
+    }
+
+    if (blockPlaceDestroy && raycast->BlockHit)
+    {
+        blockPlaceDestroy->DestroyBlock(raycast->HitBlockPosition);
+        int chunkSize = 16;
+        int x = static_cast<int>(std::floor((double)raycast->HitBlockPosition.x / chunkSize)); // WSPOLRZEDNE CHUNKU
+        int z = static_cast<int>(std::floor((double)raycast->HitBlockPosition.z / chunkSize));
+
     }
 }
 

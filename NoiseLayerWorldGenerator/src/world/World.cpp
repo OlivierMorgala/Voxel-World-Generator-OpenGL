@@ -195,7 +195,8 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 void World::setBlock(int x, int y, int z, BlockID blockID)
 {
 
-	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) {
+	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) 
+	{
 		return;
 	}
 
@@ -206,9 +207,26 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 
 	getLocalCoords(x, z, columnX, columnZ, localX, localZ);
 
-	if(auto column = getChunkColumn(columnX, columnZ)) {
+	auto column = getChunkColumn(columnX, columnZ);
+
+	if (column)
+	{
 		column->setBlock(localX, y, localZ, blockID);
 	}
+
+
+	enqueueTask([this, column]() {
+		{
+			std::lock_guard<std::mutex> meshLock(column->getMeshMutex());
+			column->buildMeshFromPendingData(*this);
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(uploadQueueMutex);
+			uploadToGPUQueue.push_back(column);
+		}
+
+		});
 }
 
 

@@ -23,4 +23,5 @@ public:
 	Raycast(float MaxDistance, World* World, Shader* Shader);
 	~Raycast() = default;
 	void RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& CameraFront);
+	World* GetWorld(); // METODA ZWRACA world
 };
