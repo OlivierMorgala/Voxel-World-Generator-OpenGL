@@ -103,5 +103,7 @@ public:
     void render(Shader* shader) const;
     void updateWorld(); 
     void regenerateWorld(); 
+
+    void renderAlteredChunks(ChunkColumn* column);
 };
 

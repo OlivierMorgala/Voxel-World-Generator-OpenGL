@@ -213,8 +213,10 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 	{
 		column->setBlock(localX, y, localZ, blockID);
 	}
+}
 
-
+void World::renderAlteredChunks(ChunkColumn* column) // METODA ODPOWIADA ZA PONOWNE RENDEROWANIE CHUNKOW KTORE ZOSTALY ZMIENIONE PRZEZ UZYTKOWNIKA -> CZYLI TAKIE NA KTORYM ZNISZCZONO LUB POSTAWIONO BLOK
+{
 	enqueueTask([this, column]() {
 		{
 			std::lock_guard<std::mutex> meshLock(column->getMeshMutex());
