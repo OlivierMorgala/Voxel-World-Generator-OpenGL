@@ -1,4 +1,5 @@
 #include "gui/WorldGeneratorUI.h"
+#include "world/generationAlgorithms/TerrainModifiers.h"
 #include "world/generationAlgorithms/PerlinNoise2D.h"
 #include "world/generationAlgorithms/FlatFill.h"
 #include <world/WorldConfig.h>
@@ -46,14 +47,14 @@ void WorldGeneratorUI::renderImGui()
 
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
 
-    ImGui::TextColored(ImVec4(1, 1, 1, 1), "Ustawienia Generatora");
+    ImGui::TextColored(ImVec4(1, 1, 1, 1), "Generator Settings");
     ImGui::Separator();
 
     static int globalSeed = 12345;
     ImGui::InputInt("Global Seed", &globalSeed);
     ImGui::Spacing();
 
-    auto& layers = worldGenerator->generationLayers;
+    std::vector<TerrainLayer>& layers = worldGenerator->generationLayers;
 
     // Flaga do automatycznego focusowania zakładki ze szczegółami
     static bool activateDetailsTab = false;
@@ -62,10 +63,10 @@ void WorldGeneratorUI::renderImGui()
     if (ImGui::BeginTabBar("GeneratorTabs")) {
 
         // ZAKŁADKA 1: WARSTWY
-        if (ImGui::BeginTabItem("Warstwy")) {
+        if (ImGui::BeginTabItem("Layers")) {
 
             if (ImGui::Button("+", ImVec2(30, 0))) {
-                ImGui::OpenPopup("Dodaj warstwe");
+                ImGui::OpenPopup("Add Layer");
             }
             ImGui::SameLine();
             if (ImGui::Button("-", ImVec2(30, 0)) && selectedLayerIndex >= 0 && selectedLayerIndex < layers.size()) {
@@ -73,7 +74,7 @@ void WorldGeneratorUI::renderImGui()
                 selectedLayerIndex = -1;
             }
 
-            if (ImGui::BeginPopupModal("Dodaj warstwe", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::BeginPopupModal("Add Layer", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                 static char nameBuf[64] = "Nowa warstwa";
                 static int layerType = 0;
                 static int start_y = 0, end_y = 64;
@@ -99,13 +100,12 @@ void WorldGeneratorUI::renderImGui()
 
                     if (ImGui::BeginCombo("Layer Block", blockTypes[currentBlockIndex].name.c_str())) {
 
-                        for (int i = 1; i < blockTypes.size(); i++) {
+                        for (int i = 0; i < blockTypes.size(); i++) {
 							const bool isSelected = (currentBlockIndex == i);
 
                             ImVec4 col(blockTypes[i].color.x, blockTypes[i].color.y, blockTypes[i].color.z, 1.0f);
 
 							ImGui::PushID(i);
-
 							ImGui::ColorButton("##color", col, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(15, 15));
                             ImGui::SameLine();
 
@@ -119,7 +119,7 @@ void WorldGeneratorUI::renderImGui()
                         }
 
                         ImGui::Separator();
-                        if (ImGui::Selectable("+ADD+")) {
+                        if (ImGui::Selectable("ADD")) {
                             isCreatingNewBlock = true;
                         }
 
@@ -133,7 +133,6 @@ void WorldGeneratorUI::renderImGui()
 
 					ImGui::InputText("Block Name", newBlockName, 64);
 					ImGui::ColorEdit3("Block Color", newBlockColor);
-					ImGui::Checkbox("Collidable", &newBlockCollidable);
 					ImGui::Checkbox("Transparent", &newBlockIsTransparent);
 
 					bool isLimitReached = (BlockDatabase::getAllBlocks().size() >= 255);
@@ -166,12 +165,12 @@ void WorldGeneratorUI::renderImGui()
                 if (isCreatingNewBlock) { ImGui::BeginDisabled(); }
 
 
-                if (ImGui::Button("Dodaj", ImVec2(120, 0))) {
+                if (ImGui::Button("ADD", ImVec2(120, 0))) {
                     if (layerType == 0) {
-                        layers.push_back(std::make_unique<PerlinNoise2D>(nameBuf, start_y, end_y, globalSeed, currentBlockIndex));
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<PerlinNoise2D>(globalSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
                     }
                     else if (layerType == 1) {
-                        layers.push_back(std::make_unique<FlatFill>(nameBuf, start_y, end_y, currentBlockIndex));
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<FlatFill>()));
                     }
                     ImGui::CloseCurrentPopup();
                 }
@@ -179,7 +178,7 @@ void WorldGeneratorUI::renderImGui()
                 if(isCreatingNewBlock) { ImGui::EndDisabled(); }
 
                 ImGui::SameLine();
-                if (ImGui::Button("Anuluj", ImVec2(120, 0))) {
+                if (ImGui::Button("Cancel", ImVec2(120, 0))) {
 				    isCreatingNewBlock = false; 
                     ImGui::CloseCurrentPopup();
                 }
@@ -196,10 +195,9 @@ void WorldGeneratorUI::renderImGui()
 
                 for (int i = 0; i < layers.size(); i++) {
                     ImGui::TableNextRow();
-
                     ImGui::TableNextColumn();
                     bool isSelected = (selectedLayerIndex == i);
-                    std::string label = layers[i]->layerName + "##" + std::to_string(i);
+                    std::string label = layers[i].name + "##" + std::to_string(i);
 
                     // Po kliknięciu wiersza zapamiętujemy indeks i odpalamy flagę przerzucenia zakładki
                     if (ImGui::Selectable(label.c_str(), isSelected)) {
@@ -209,7 +207,7 @@ void WorldGeneratorUI::renderImGui()
 
                     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                         ImGui::SetDragDropPayload("LAYER_ROW", &i, sizeof(int));
-                        ImGui::Text("Przesun: %s", layers[i]->layerName.c_str());
+                        ImGui::Text("Przesun: %s", layers[i].name.c_str());
                         ImGui::EndDragDropSource();
                     }
                     if (ImGui::BeginDragDropTarget()) {
@@ -224,12 +222,12 @@ void WorldGeneratorUI::renderImGui()
 
                     ImGui::TableNextColumn();
                     ImGui::PushItemWidth(-FLT_MIN);
-                    ImGui::InputInt(("##start" + std::to_string(i)).c_str(), &layers[i]->startY, 0, 0);
+                    ImGui::InputInt(("##start" + std::to_string(i)).c_str(), &layers[i].startY, 0, 0);
                     ImGui::PopItemWidth();
 
                     ImGui::TableNextColumn();
                     ImGui::PushItemWidth(-FLT_MIN);
-                    ImGui::InputInt(("##end" + std::to_string(i)).c_str(), &layers[i]->endY, 0, 0);
+                    ImGui::InputInt(("##end" + std::to_string(i)).c_str(), &layers[i].endY, 0, 0);
                     ImGui::PopItemWidth();
                 }
                 ImGui::EndTable();
@@ -247,13 +245,60 @@ void WorldGeneratorUI::renderImGui()
                 activateDetailsTab = false; // Resetujemy flagę
             }
 
-            if (ImGui::BeginTabItem("Szczegoly algorytmu", nullptr, tabFlags)) {
-                ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Ustawienia: %s", layers[selectedLayerIndex]->layerName.c_str());
+            if (ImGui::BeginTabItem("Layer details", nullptr, tabFlags)) {
+                TerrainLayer& currentLayer = layers[selectedLayerIndex];
+
+                ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Settings: %s", currentLayer.name.c_str());
                 ImGui::Separator();
+                
+                const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE"};
+                ImGui::Combo("Blending Mode", (int*)&currentLayer.blendMode, blendNames, IM_ARRAYSIZE(blendNames));
+
+                if (currentLayer.blendMode == BlendMode::SMOOTH) {
+                    ImGui::SliderFloat("Blending Weight", &currentLayer.blendWeight, 0.0f, 1.0f);
+                }
+
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                if (currentLayer.algorithm) {
+                    currentLayer.algorithm->renderImGui();
+                }
+
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Mathematical Modifiers");
                 ImGui::Spacing();
 
-                // Tutaj modyfikujesz parametry (częstotliwość, oktawy, itd.)
-                layers[selectedLayerIndex]->renderImGuiSettings();
+                for (int i = 0; i < currentLayer.activeModifiers.size(); i++) {
+                    ImGui::PushID(static_cast<int>(i));
+                    ImGui::BeginGroup();
+
+                    currentLayer.activeModifiers[i]->renderImGui();
+
+                    ImGui::SameLine();
+                    if (ImGui::Button("X", ImVec2(24, 24))) {
+                        currentLayer.activeModifiers.erase(currentLayer.activeModifiers.begin() + i);
+                    }
+
+                    ImGui::EndGroup();
+                    ImGui::PopID();
+                }
+
+                ImGui::Spacing();
+
+                static int modIndex = 0;
+                ImGui::Combo("##ModType", &modIndex, "Invert\0Power\0Terrace\0Ridged\0MesaCurve\0");
+                ImGui::SameLine();
+
+                if (ImGui::Button("Add Modifier")) {
+                    if (modIndex == 0) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierInvert>()); }
+                    else if (modIndex == 1) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierPower>()); }
+                    else if (modIndex == 2) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierTerrace>()); }
+                    else if (modIndex == 3) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierRidged>()); }
+                    else if (modIndex == 4) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierMesaCurve>()); }
+                }
 
                 ImGui::EndTabItem();
             }

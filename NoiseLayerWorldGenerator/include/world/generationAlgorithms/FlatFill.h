@@ -1,14 +1,14 @@
 #pragma once
+#include "world/TerrainPipeline.h"
 
-#include "GenerationAlgorithm.h"
-class FlatFill : public GenerationAlgorithm
+class FlatFill : public TerrainAlgorithm
 {
 private:
 
 public:
-	FlatFill(std::string name, int startY, int endY, BlockID blockID);
+	FlatFill() = default;
 
-	virtual void applyToColumn(ChunkColumn& column) override;
-	virtual void renderImGuiSettings() override;
+	float evaluate(float x, float z) override;
+	void renderImGui() override;
 };
 

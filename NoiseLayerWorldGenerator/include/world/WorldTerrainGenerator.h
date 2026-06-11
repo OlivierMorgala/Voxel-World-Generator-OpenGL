@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "world/ChunkColumn.h"
-#include "world/generationAlgorithms/GenerationAlgorithm.h"
+#include "world/TerrainPipeline.h"
 
 class WorldTerrainGenerator
 {
@@ -9,7 +9,7 @@ private:
 
 public:
 	//wektor obiketów ktore s¹ ró¿nymi algorytmami generacji
-	std::vector<std::unique_ptr<GenerationAlgorithm>> generationLayers;
+	std::vector<TerrainLayer> generationLayers;
 
 	//Wywo³anie algorytmów na renderowanej kolumnie
 	void applyToColumn(ChunkColumn& column);

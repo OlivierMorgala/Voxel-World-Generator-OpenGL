@@ -100,7 +100,6 @@ public:
     ChunkColumn* getChunkColumn(int x, int z) const;
 
     void generateWorldMesh();
-    void render(Shader* shader) const;
     void updateWorld(); 
     void regenerateWorld(); 
 };

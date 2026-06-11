@@ -13,6 +13,11 @@ public:
 	WorldRenderer();
 	~WorldRenderer() = default;
 
+	bool isCameraUnderwater = false;
+	glm::vec3 underwaterColor = glm::vec3(0.0f);
+
+	bool isFrustumCullingEnabled = true;
+
 	void render(World& world, const Camera& camera, Shader& shader, float windowAspectRatio);
 };
 

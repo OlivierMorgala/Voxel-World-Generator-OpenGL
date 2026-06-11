@@ -48,11 +48,20 @@ Chunk* ChunkColumn::getChunk(int yIndex) const
 
 void ChunkColumn::buildMeshFromPendingData(const World& world)
 {
-	pendingVertices.clear();
-	pendingIndicies.clear();
-	uint32_t indexOffset = 0;
+	pendingOpaqueVertices.clear();
+	pendingTransparentVertices.clear();
+	pendingOpaqueIndices.clear();
+	pendingTransparentIndices.clear();
+	uint32_t opaqueIndexOffset = 0;
+	uint32_t transparentIndexOffset	 = 0;
 
-	pendingVertices.reserve(Chunk::CHUNK_VOLUME * 2);
+
+	pendingOpaqueVertices.reserve((Chunk::CHUNK_VOLUME * chunks.size()) / 2);
+	pendingOpaqueIndices.reserve(Chunk::CHUNK_VOLUME * chunks.size());
+
+	pendingTransparentVertices.reserve((Chunk::CHUNK_VOLUME * chunks.size()) / 4);
+	pendingTransparentIndices.reserve((Chunk::CHUNK_VOLUME * chunks.size()) / 2);
+
 
 	ChunkColumn* frontColumn = world.getChunkColumn(columnX, columnZ + 1);
 	ChunkColumn* backColumn = world.getChunkColumn(columnX, columnZ - 1);
@@ -93,7 +102,7 @@ void ChunkColumn::buildMeshFromPendingData(const World& world)
 
 		int chunkYOffset = i * Chunk::CHUNK_SIZE;
 
-		chunks[i]->collectMeshData(pendingVertices, pendingIndicies, indexOffset, chunkYOffset, topNeighbor, bottomNeighbor, frontNeighbor, backNeighbor, leftNeighbor, rightNeighbor);
+		chunks[i]->collectMeshData(pendingOpaqueVertices, pendingOpaqueIndices, opaqueIndexOffset, pendingTransparentVertices, pendingTransparentIndices, transparentIndexOffset, chunkYOffset, topNeighbor, bottomNeighbor, frontNeighbor, backNeighbor, leftNeighbor, rightNeighbor);
 	}
 
 	hasPendingMeshData = true;
@@ -105,31 +114,53 @@ void ChunkColumn::uploadMeshToGPU()
 
 	if (!hasPendingMeshData) { return; }
 	
-	if (!pendingVertices.empty()) {
-		columnMesh = std::make_unique<Mesh>(pendingVertices, pendingIndicies);
+	if (!pendingOpaqueVertices.empty()) {
+		opaqueColumnMesh = std::make_unique<Mesh>(pendingOpaqueVertices, pendingOpaqueIndices);
 	}
 	else {
-		columnMesh.reset();
+		opaqueColumnMesh.reset();
 	}
 
-	pendingVertices.clear();
-	pendingVertices.shrink_to_fit();
-	pendingIndicies.clear();
-	pendingIndicies.shrink_to_fit();
+	if (!pendingTransparentVertices.empty()) {
+		transparentColumnMesh = std::make_unique<Mesh>(pendingTransparentVertices, pendingTransparentIndices);
+	}
+	else {
+		transparentColumnMesh.reset();
+	}
+
+	pendingOpaqueVertices.clear();
+	pendingOpaqueVertices.shrink_to_fit();
+	pendingOpaqueIndices.clear();
+	pendingOpaqueIndices.shrink_to_fit();
+
+	pendingTransparentVertices.clear();
+	pendingTransparentVertices.shrink_to_fit();
+	pendingTransparentIndices.clear();
+	pendingTransparentIndices.shrink_to_fit();
 
 	hasPendingMeshData = false;
 	isMeshGenerated = true;
 	isRerenderNeeded = false;
 }
 
-void ChunkColumn::render(Shader* shader) const
+void ChunkColumn::renderOpaque(Shader* shader) const
 {
-	if (!columnMesh) { return; }
+	if (!opaqueColumnMesh) { return; }
 
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(columnX * Chunk::CHUNK_SIZE, 0, columnZ * Chunk::CHUNK_SIZE));
 	shader->setMatrix4("model", model);
 
-	columnMesh->draw();
+	opaqueColumnMesh->draw();
+}
+
+void ChunkColumn::renderTransparent(Shader* shader) const
+{
+	if (!transparentColumnMesh) { return; }
+
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(columnX * Chunk::CHUNK_SIZE, 0, columnZ * Chunk::CHUNK_SIZE));
+	shader->setMatrix4("model", model);
+
+	transparentColumnMesh->draw();
 }
 
 int ChunkColumn::getX() const 

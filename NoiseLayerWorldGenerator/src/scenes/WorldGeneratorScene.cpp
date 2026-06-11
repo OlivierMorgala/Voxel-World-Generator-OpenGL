@@ -1,6 +1,8 @@
 #include "scenes\WorldGeneratorScene.h"
 #include "scenes\LoadingScene.h"
 #include "managers\SceneManager.h"
+
+#include "world\TerrainPipeline.h"
 #include "world\generationAlgorithms\PerlinNoise2D.h"
 #include "world\generationAlgorithms\FlatFill.h"
 
@@ -23,8 +25,17 @@ void WorldGeneratorScene::onEnter()
     
 	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
 
-	worldTerrainGenerator->generationLayers.push_back(std::make_unique<FlatFill>("Flat", 60, 70, 2));
-    worldTerrainGenerator->generationLayers.push_back(std::make_unique<PerlinNoise2D>("Perlin", 5, 50, 12345, 1, 0.090, 0.700, 6, 1.740, 0.400));
+
+
+    TerrainLayer perlinLayer("Perlin", 5, 50, 1, std::make_unique<PerlinNoise2D>(12345, 0.090f, 0.700f, 6, 1.740f, 0.400f));
+    perlinLayer.blendMode = BlendMode::NORMAL;
+    worldTerrainGenerator->generationLayers.push_back(std::move(perlinLayer));
+
+    TerrainLayer skyLayer("Flat Sky", 60, 70, 2, std::make_unique<FlatFill>());
+    skyLayer.blendMode = BlendMode::ABSOLUTE;
+    worldTerrainGenerator->generationLayers.push_back(std::move(skyLayer));
+
+
 
     world = std::make_unique<World>();
     world->setCamera(camera.get());
@@ -106,6 +117,13 @@ void WorldGeneratorScene::render()
 
         glViewport(0, 0, width, height);
 
+        if (worldRenderer->isCameraUnderwater) {
+            glm::vec3 depthColor = worldRenderer->underwaterColor * 0.4f;
+            glClearColor(depthColor.r, depthColor.g, depthColor.b, 1.0f);
+        }
+        else {
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -121,6 +139,17 @@ void WorldGeneratorScene::render()
 
 void WorldGeneratorScene::onImGuiRender()
 {
+    if (worldRenderer && worldRenderer->isCameraUnderwater) {
+        ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+        int r = static_cast<int>(worldRenderer->underwaterColor.r * 255.0f);
+        int g = static_cast<int>(worldRenderer->underwaterColor.g * 255.0f);
+        int b = static_cast<int>(worldRenderer->underwaterColor.b * 255.0f);
+
+        ImU32 filterColor = IM_COL32(r, g, b, 140);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.0f, 0.0f), screenSize, filterColor);
+    }
+
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_AlwaysAutoResize |
         ImGuiWindowFlags_NoSavedSettings |

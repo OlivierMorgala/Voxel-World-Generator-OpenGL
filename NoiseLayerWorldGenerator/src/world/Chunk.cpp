@@ -34,7 +34,9 @@ Chunk::~Chunk()
 {
 }
 
-void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const
+void Chunk::collectMeshData(std::vector<Vertex>& opaqueVertices, std::vector<uint32_t>& opaqueIndices, uint32_t& opaqueIndexOffset,
+	std::vector<Vertex>& transparentVertices, std::vector<uint32_t>& transparentIndices, uint32_t& transparentIndexOffset,
+	int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const
 {
 	// Iterujemy przez wszystkie bloki w sekcji
 	for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -47,6 +49,7 @@ void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>
 
 				//Pobieramy dane aktualnego bloku na podstawie jego ID z bazy danych bloków
 				const auto& blockData = BlockDatabase::getBlockData(currentBlockID);
+				bool isCurrentBlockTransparent = blockData.isTransparent;
 
 				// Dla każdego bloku sprawdzamy jego 6 sąsiadów (przód, tył, lewo, prawo, góra, dół) aby określić które ścianki są widoczne
 				for (int wall = 0; wall < 6; wall++) {
@@ -55,52 +58,67 @@ void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>
 					int neighborY = y + neighborOffsets[wall][1];
 					int neighborZ = z + neighborOffsets[wall][2];
 
-					// Zakładamy że ścianka nie jest widoczna dopóki nie sprawdzimy sąsiada
-					bool isFaceVisible = false;
-
 					//Zmienna przechowuje ID bloku sąsiadującego z aktualną ścianą
 					BlockID neighborID = 0;
 
 					//Logika sprawdzania widoczności ścianki wzgledem sąsiada
 					if (neighborY >= CHUNK_SIZE) {
 						//Sąsiad powyżej aktualnego chunka - bierzemy blok z samego dołu (Y=0) górnego sąsiada
-						neighborID = getBlockFromNeighbor(topNeighbor, neighborX, 0, neighborZ);
+						neighborID = getBlockFromNeighbor(topNeighbor, neighborX, 0, neighborZ, currentBlockID);
 					}
 					else if (neighborY < 0) {
 						//Sąsiad poniżej aktualnego chunka - bierzemy blok z samej góry (Y=MAX) dolnego sąsiada
-						neighborID = getBlockFromNeighbor(bottomNeighbor, neighborX, CHUNK_SIZE - 1, neighborZ);
+						neighborID = getBlockFromNeighbor(bottomNeighbor, neighborX, CHUNK_SIZE - 1, neighborZ, currentBlockID);
 					}
 					else if (neighborX >= CHUNK_SIZE) {
 						//Sąsiad po prawej stronie - bierzemy blok z lewej krawędzi (X=0) prawego sąsiada
-						neighborID = getBlockFromNeighbor(rightNeighbor, 0, neighborY, neighborZ);
+						neighborID = getBlockFromNeighbor(rightNeighbor, 0, neighborY, neighborZ, currentBlockID);
 					}
 					else if (neighborX < 0) {
 						//Sąsiad po lewej stronie - bierzemy blok z prawej krawędzi (X=MAX) lewego sąsiada
-						neighborID = getBlockFromNeighbor(leftNeighbor, CHUNK_SIZE - 1, neighborY, neighborZ);
+						neighborID = getBlockFromNeighbor(leftNeighbor, CHUNK_SIZE - 1, neighborY, neighborZ, currentBlockID);
 					}
 					else if (neighborZ >= CHUNK_SIZE) {
 						//Sąsiad z przodu - bierzemy blok z tyłu (Z=0) przedniego sąsiada
-						neighborID = getBlockFromNeighbor(frontNeighbor, neighborX, neighborY, 0);
+						neighborID = getBlockFromNeighbor(frontNeighbor, neighborX, neighborY, 0, currentBlockID);
 					}
 					else if (neighborZ < 0) {
 						//Sąsiad z tyłu - bierzemy blok z przodu (Z=MAX) tylnego sąsiada
-						neighborID = getBlockFromNeighbor(backNeighbor, neighborX, neighborY, CHUNK_SIZE - 1);
+						neighborID = getBlockFromNeighbor(backNeighbor, neighborX, neighborY, CHUNK_SIZE - 1, currentBlockID);
 					}
 					else {
 						//Sąsiad znajduje się wewnątrz tego samego chunka - pobieramy go bezpośrednio
 						neighborID = getBlock(neighborX, neighborY, neighborZ);
 					}
 
+					bool isFaceVisible = false;
 
-					//Decyzja o rysowaniu ścianki na podstawie otrzymanego bloku sąsiada
-					if (neighborID == 0 || BlockDatabase::getBlockData(neighborID).isTransparent) {
-						//Jeśli sąsiad jest pustym blokiem (ID=0) lub jest blokiem przezroczystym
+					
+					if (neighborID == 0) {
 						isFaceVisible = true;
+					}
+					else {
+						const BlockData& neighborBlockData = BlockDatabase::getBlockData(neighborID);
+
+						if (isCurrentBlockTransparent) {
+							if (neighborBlockData.isTransparent && neighborID != currentBlockID) {
+								isFaceVisible = true;
+							}
+						}
+						else {
+							if(neighborBlockData.isTransparent) {
+								isFaceVisible = true;
+							}
+						}
 					}
 
 
 					// Jeśli ścianka jest widoczna to dodajemy jej wierzchołki do wektora wierzchołków
 					if (isFaceVisible) {
+
+						std::vector<Vertex>& targetVertices = isCurrentBlockTransparent ? transparentVertices : opaqueVertices;
+						std::vector<uint32_t>& targetIndices = isCurrentBlockTransparent ? transparentIndices : opaqueIndices;
+						uint32_t& targetIndexOffset = isCurrentBlockTransparent ? transparentIndexOffset : opaqueIndexOffset;
 
 						// Dodajemy wierzchołki dla tej ścianki. Współrzędne wierzchołków są obliczane na podstawie lokalnych współrzędnych ścianki (faceVertices) i globalnej pozycji bloku (x, y, z)
 						for (int v = 0; v < 4; v++) {
@@ -118,20 +136,19 @@ void Chunk::collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>
 							// Ustawiamy lokalną pozycję by shader mógł poprawnie nałożyć teksturę ramki na ściankę
 							vertex.localPosition = faceCoords[v];
 
-							vertices.push_back(vertex);
+							targetVertices.push_back(vertex);
 						}
 
 						// Dodajemy indeksy dla tej ścianki (2 trójkąty tworzące kwadrat)
-						indices.push_back(indexOffset + 0);
-						indices.push_back(indexOffset + 1);
-						indices.push_back(indexOffset + 2);
+						targetIndices.push_back(targetIndexOffset + 0);
+						targetIndices.push_back(targetIndexOffset + 1);
+						targetIndices.push_back(targetIndexOffset + 2);
 
-						indices.push_back(indexOffset + 2);
-						indices.push_back(indexOffset + 3);
-						indices.push_back(indexOffset + 0);
-
+						targetIndices.push_back(targetIndexOffset + 2);
+						targetIndices.push_back(targetIndexOffset + 3);
+						targetIndices.push_back(targetIndexOffset + 0);
 						// Aktualizujemy offset indeksów o 4 ponieważ każda ścianka dodaje 4 wierzchołki
-						indexOffset += 4;
+						targetIndexOffset += 4;
 					}
 
 				}
@@ -174,12 +191,12 @@ BlockID Chunk::getBlock(int x, int y, int z) const
 	return blocksTable[x + (y * CHUNK_SIZE) + (z * CHUNK_SIZE * CHUNK_SIZE)];
 }
 
-BlockID Chunk::getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z) const
+BlockID Chunk::getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z, BlockID fallbackBlockID) const
 {
 	// Jeśli sąsiad istnieje to pobieramy ID bloku z tego sąsiada na podstawie podanych współrzędnych. Jeśli sąsiad nie istnieje to zwracamy 0 (PUSTY BLOK)
 	if (neighbor) {
 		return neighbor->getBlock(x, y, z);
 	}
-	return 0;
+	return fallbackBlockID;
 }
 

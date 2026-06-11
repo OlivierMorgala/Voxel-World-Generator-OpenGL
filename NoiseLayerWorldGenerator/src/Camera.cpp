@@ -19,7 +19,7 @@ glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 	return glm::perspective(glm::radians(config.fov), aspectRatio, config.viewBegin, config.viewDistance);
 }
 
-void Camera::processKeyboardInput(Camera_Movement direction, float deltaTime)
+void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 {
 	// Prędkość ruchu jest skalowana przez deltaTime, aby zapewnić płynny ruch niezależnie od liczby klatek na sekundę
 	float velocity = movementSpeed * deltaTime;
@@ -61,4 +61,78 @@ void Camera::updateCameraVectors()
 	right = glm::normalize(glm::cross(front, worldUp));
 	//Obliczamy iloczny wektorowy między right a front aby uzyskać wektor up który daj nam nasze odchylenie w górę/dół. Normalizujemy go aby zapewnić że ma długość 1
 	up = glm::normalize(glm::cross(right, front));
+}
+
+//Frustum------------------------------------------------------------
+
+Frustum Camera::getFrustum(float aspectRatio) const 
+{
+	Frustum frustum;
+
+	
+	glm::mat4 proj = getProjectionMatrix(aspectRatio);
+	glm::mat4 view = getViewMatrix();
+	
+	glm::mat4 viewProjectionMatrix = proj * view;
+
+	frustum.far.normal.x = viewProjectionMatrix[0][3] - viewProjectionMatrix[0][2];
+	frustum.far.normal.y = viewProjectionMatrix[1][3] - viewProjectionMatrix[1][2];
+	frustum.far.normal.z = viewProjectionMatrix[2][3] - viewProjectionMatrix[2][2];
+	frustum.far.distance = viewProjectionMatrix[3][3] - viewProjectionMatrix[3][2];
+
+	frustum.near.normal.x = viewProjectionMatrix[0][3] + viewProjectionMatrix[0][2];
+	frustum.near.normal.y = viewProjectionMatrix[1][3] + viewProjectionMatrix[1][2];
+	frustum.near.normal.z = viewProjectionMatrix[2][3] + viewProjectionMatrix[2][2];
+	frustum.near.distance = viewProjectionMatrix[3][3] + viewProjectionMatrix[3][2];
+
+	frustum.right.normal.x = viewProjectionMatrix[0][3] - viewProjectionMatrix[0][0];
+	frustum.right.normal.y = viewProjectionMatrix[1][3] - viewProjectionMatrix[1][0];
+	frustum.right.normal.z = viewProjectionMatrix[2][3] - viewProjectionMatrix[2][0];
+	frustum.right.distance = viewProjectionMatrix[3][3] - viewProjectionMatrix[3][0];
+
+	frustum.left.normal.x = viewProjectionMatrix[0][3] + viewProjectionMatrix[0][0];
+	frustum.left.normal.y = viewProjectionMatrix[1][3] + viewProjectionMatrix[1][0];
+	frustum.left.normal.z = viewProjectionMatrix[2][3] + viewProjectionMatrix[2][0];
+	frustum.left.distance = viewProjectionMatrix[3][3] + viewProjectionMatrix[3][0];
+
+	frustum.top.normal.x = viewProjectionMatrix[0][3] - viewProjectionMatrix[0][1];
+	frustum.top.normal.y = viewProjectionMatrix[1][3] - viewProjectionMatrix[1][1];
+	frustum.top.normal.z = viewProjectionMatrix[2][3] - viewProjectionMatrix[2][1];
+	frustum.top.distance = viewProjectionMatrix[3][3] - viewProjectionMatrix[3][1];
+
+	frustum.bottom.normal.x = viewProjectionMatrix[0][3] + viewProjectionMatrix[0][1];
+	frustum.bottom.normal.y = viewProjectionMatrix[1][3] + viewProjectionMatrix[1][1];
+	frustum.bottom.normal.z = viewProjectionMatrix[2][3] + viewProjectionMatrix[2][1];
+	frustum.bottom.distance = viewProjectionMatrix[3][3] + viewProjectionMatrix[3][1];
+
+	frustum.far.normalizeData();
+	frustum.near.normalizeData();
+	frustum.right.normalizeData();
+	frustum.left.normalizeData();
+	frustum.top.normalizeData();
+	frustum.bottom.normalizeData();
+
+	return frustum;
+}
+
+
+bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const
+{
+	
+	const Plane* planes[6] = { &frustum.far, &frustum.near, &frustum.top, &frustum.bottom, &frustum.right, &frustum.left };
+
+	for (int i = 0; i < 6; i++) {
+
+		glm::vec3 farthestVertex = aabb.min;
+		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }
+		if (planes[i]->normal.y >= 0) { farthestVertex.y = aabb.max.y; }
+		if (planes[i]->normal.z >= 0) { farthestVertex.z = aabb.max.z; }
+
+		if (glm::dot(planes[i]->normal, farthestVertex) + planes[i]->distance < 0) {
+			return false;
+		}
+
+	}
+
+	return true;
 }

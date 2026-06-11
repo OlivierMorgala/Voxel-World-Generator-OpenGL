@@ -7,6 +7,31 @@
 
 #include "world/WorldConfig.h"
 
+struct Plane {
+	glm::vec3 normal;
+	float distance;
+
+	void normalizeData() {
+		float mag = glm::length(normal);
+		normal /= mag;
+		distance /= mag;
+	}
+};
+
+struct Frustum {
+	Plane far;
+	Plane near;
+	Plane top;
+	Plane bottom;
+	Plane right;
+	Plane left;
+};
+
+struct AA_BoundingBox {
+	glm::vec3 max;
+	glm::vec3 min;
+};
+
 class Camera
 {
 private:
@@ -19,7 +44,7 @@ private:
 
 public:
 	// Enum do reprezentowania kierunków ruchu kamery
-	enum Camera_Movement {
+	enum CameraMovement {
 		FORWARD,
 		BACKWARD,
 		LEFT,
@@ -32,6 +57,7 @@ public:
 	glm::vec3 front; // Kierunek, w którym kamera jest skierowana
 	glm::vec3 up; // Wektor "góry" kamery, używany do określenia orientacji
 	glm::vec3 right; // Wektor "prawo" kamery, prostopadły do front i up
+
 	glm::vec3 worldUp; // Wektor "góry" świata, używany do obliczania orientacji kamery
 
 	float movementSpeed;
@@ -46,9 +72,16 @@ public:
 	glm::mat4 getProjectionMatrix(float aspectRatio) const;
 
 	// Metoda do przetwarzania wejścia z klawiatury i aktualizacji pozycji kamery
-	void processKeyboardInput(Camera_Movement direction, float deltaTime);
+	void processKeyboardInput(CameraMovement direction, float deltaTime);
 
 	// Metoda do przetwarzania ruchu myszy i aktualizacji orientacji kamery
 	void processMouseMovement(float xoffset, float yoffset);
+
+
+	//Frustum------------------------------------------------------------
+
+	Frustum getFrustum(float aspectRatio) const;
+
+	bool isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const;
 };
 

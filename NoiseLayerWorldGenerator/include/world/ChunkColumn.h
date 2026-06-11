@@ -18,14 +18,17 @@ private:
 	int columnX;
 	int columnZ;
 
-	std::unique_ptr<Mesh> columnMesh;
+	std::unique_ptr<Mesh> opaqueColumnMesh;
+	std::unique_ptr<Mesh> transparentColumnMesh;
 
 	bool isMeshGenerated = false;
 	bool isRerenderNeeded = false;
 	bool hasPendingMeshData = false;
 
-	std::vector<Vertex> pendingVertices;
-	std::vector<uint32_t> pendingIndicies;
+	std::vector<Vertex> pendingOpaqueVertices;
+	std::vector<uint32_t> pendingOpaqueIndices;
+	std::vector<Vertex> pendingTransparentVertices;
+	std::vector<uint32_t> pendingTransparentIndices;
 
 	std::mutex meshMutex;
 
@@ -44,7 +47,9 @@ public:
 
 	void buildMeshFromPendingData(const World& world);
 	void uploadMeshToGPU();
-	void render(Shader* shader) const;
+
+	void renderOpaque(Shader* shader) const;
+	void renderTransparent(Shader* shader) const;
 
 	int getX() const;
 	int getZ() const;

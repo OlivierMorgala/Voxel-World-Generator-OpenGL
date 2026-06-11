@@ -71,9 +71,13 @@ void World::enqueueTask(std::function<void()> task)
 	{
 		std::lock_guard<std::mutex> tasksQueueLock(tasksQueueMutex);
 		tasksQueue.push([this, task]() {
-			task();
+			try {
+				task();
+			}catch (const std::exception& e) {
+				std::cerr << "[ERROR:WORLD::THREAD] Zadanie przerwane: " << e.what() << std::endl;
+			}
 			pendingTasks--;
-			});
+		});
 	}
 
 	condition.notify_one();
@@ -245,15 +249,6 @@ void World::generateWorldMesh()
 	}
 }
 
-
-
-void World::render(Shader* shader) const
-{
-	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
-	for (auto const& [position, column] : columnsMap) {
-		column->render(shader);
-	}
-}
 
 
 

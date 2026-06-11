@@ -24,7 +24,7 @@ private:
 
 	// Funkcja pomocnicza do pobierania ID bloku z sąsiedniej sekcji.
 	// Ta funkcja jest używana podczas generowania siatki aby sprawdzić widoczność ścianek na granicy sekcji
-	BlockID getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z) const;
+	BlockID getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z, BlockID fallbackBlockID) const;
 
 public:
 	Chunk();
@@ -34,7 +34,9 @@ public:
 	const static int CHUNK_SIZE = 16;
 	const static int CHUNK_VOLUME = 4096;
 
-	void collectMeshData(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, uint32_t& indexOffset, int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const;
+	void collectMeshData(std::vector<Vertex>& opaqueVertices, std::vector<uint32_t>& opaqueIndices, uint32_t& opaqueIndexOffset,
+		std::vector<Vertex>& transparentVertices, std::vector<uint32_t>& transparentIndices, uint32_t& transparentIndexOffset,
+		int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const;
 
 	// Funkcja ustawiająca ID bloku na podstawie jego pozycji w sekcji
 	void setBlock(int x, int y, int z, BlockID blockID);
