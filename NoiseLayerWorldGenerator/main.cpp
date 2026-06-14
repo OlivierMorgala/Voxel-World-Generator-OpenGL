@@ -7,6 +7,7 @@
 #include "managers/InputManager.h"
 #include "managers/SceneManager.h"
 #include "managers/WindowManager.h"
+#include "scenes/StartingScene.h"
 
 #include "scenes/WorldGeneratorScene.h"
 
@@ -62,7 +63,7 @@ int main() {
 	glFrontFace(GL_CCW); // Ustawienie kierunku wierzchołków przeciwnych do ruchu wskazówek zegara
 
 	//Inicjalizaca sceny startowej programu
-	SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>());
+	SceneManager::getInstance().pushScene(std::make_unique<StartingScene>());
 
 	float lastFrameTime = 0.0f;
 
