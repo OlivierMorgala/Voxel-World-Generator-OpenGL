@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\world\generationAlgorithms\PerlinNoise3D.cpp" />
     <ClCompile Include="src\BlockPlaceDestroy.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\Raycasting.cpp" />
@@ -76,6 +77,7 @@
     <ClInclude Include="include\world\WorldRenderer.h" />
     <ClInclude Include="include\world\WorldTerrainGenerator.h" />
     <ClInclude Include="include\Raycasting.h" />
+    <ClInclude Include="include\world\generationAlgorithms\PerlinNoise3D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\test.frag" />

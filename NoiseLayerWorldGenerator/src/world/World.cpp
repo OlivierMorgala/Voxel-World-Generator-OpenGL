@@ -207,9 +207,7 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 
 	getLocalCoords(x, z, columnX, columnZ, localX, localZ);
 
-	auto column = getChunkColumn(columnX, columnZ);
-
-	if (column)
+	if (auto column = getChunkColumn(columnX, columnZ))
 	{
 		column->setBlock(localX, y, localZ, blockID);
 	}

@@ -13,10 +13,10 @@ class Raycast
 {
 private:
 	World* world;
-	Shader* shader;
-	std::chrono::steady_clock::time_point lastHitTime;
-	std::chrono::milliseconds hitCooldown{ 1000 }; 
+	Shader* shader; 
 public:
+	std::chrono::steady_clock::time_point lastHitTime;
+	std::chrono::milliseconds hitCooldown{ 1000 };
 	float maxDistance;
 	bool BlockHit;
 	glm::vec3 HitBlockPosition;

@@ -84,19 +84,19 @@ void Raycast::RaycastDDA(const glm::vec3& CameraPosition, const glm::vec3& Camer
 		{
 			x += StepX;
 			SideDistX += DeltaX;
-			distance += DeltaX;
+			distance = SideDistX - DeltaX;
 		}
 		else if (SideDistY <= SideDistX && SideDistY <= SideDistZ)
 		{
 			y += StepY;
 			SideDistY += DeltaY;
-			distance += DeltaY;
+			distance = SideDistY - DeltaY;
 		}
 		else
 		{
 			z += StepZ;
 			SideDistZ += DeltaZ;
-			distance += DeltaZ;
+			distance = SideDistZ - DeltaZ;
 		}
 
 		if (distance > MaxDistance)
