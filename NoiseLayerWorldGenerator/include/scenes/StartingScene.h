@@ -4,15 +4,16 @@
 class StartingScene : public Scene
 {
 private:
-    unsigned int backgroundTextureID = 0; // ID tekstury z OpenGL
+    unsigned int backgroundTextureID = 0;
 
-    // Zmienne do obsługi animacji obracającej się planety (skopiowane z LoadingScene)
+    // Zmienne do obsługi animacji obracającej się planety
     int cols = 5;
     int rows = 24;
     int totalFrames = 120;
     int currentFrame = 0;
     float animationTimer = 0.0f;
-    float frameDuration = 0.03f;
+
+    float frameDuration = 0.08f;
 
 public:
     StartingScene();
