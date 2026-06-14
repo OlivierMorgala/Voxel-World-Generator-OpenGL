@@ -16,14 +16,14 @@ int main() {
 	if (!glfwInit()) { return -1; }
 
 	//Stworzenie okna
-	GLFWwindow* window = glfwCreateWindow(1920, 1080, "World Generator", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(1920, 1080, "TerraBoxel: Voxel Terrain Generator", NULL, NULL);
 	if (!window) {
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
 
-	//Wyłączenie v-sync co pozwala na renderowanie klatek tak szybko jak to możliwe bez ograniczeń
+	//Wyłączenie v-sync co pozwala na renderowanie klatek bez ograniczeń
 	glfwSwapInterval(1);
 
 	//Ustawienie głównego okna w WindowManagerze

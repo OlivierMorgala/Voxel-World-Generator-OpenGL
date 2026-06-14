@@ -98,6 +98,7 @@ public:
 
     void addChunkColumn(int x, int z);
     ChunkColumn* getChunkColumn(int x, int z) const;
+    std::vector<ChunkColumn*> getLoadedColumns() const;
 
     void generateWorldMesh();
     void updateWorld(); 

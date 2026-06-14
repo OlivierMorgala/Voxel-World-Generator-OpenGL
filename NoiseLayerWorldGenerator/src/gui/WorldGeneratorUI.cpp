@@ -6,6 +6,7 @@
 #include <world/World.h>
 #include <managers/SceneManager.h>
 #include <scenes/LoadingScene.h>
+#include <random>
 
 WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* world) :
     worldGenerator(generator),
@@ -72,10 +73,25 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
     ImGui::TextColored(ImVec4(1, 1, 1, 1), "Generator Settings");
     ImGui::Separator();
 
+    ImGui::PushItemWidth(230.0f);
     ImGui::InputInt("Global Seed", &config.worldSeed);
+    ImGui::PopItemWidth();
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Randomize", ImVec2(110.0f, 0.0f))) {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> distr(-2147483640, 2147483640);
+        config.worldSeed = distr(gen);
+    }
+
+    ImGui::Spacing();
     ImGui::Spacing();
 
     ImGui::SliderInt("Render Distance", &config.renderDistance, 1, 60);
+
+    ImGui::Spacing();
     ImGui::Spacing();
 
     std::vector<TerrainLayer>& layers = worldGenerator->generationLayers;
@@ -354,7 +370,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
         }
 
         // ZAKŁADKA 3: KAMERA
-        if (ImGui::BeginTabItem("Kamera")) {
+        if (ImGui::BeginTabItem("Camera")) {
 
             ImGui::SliderFloat("FOV", &config.fov, 80.0f, 110.0f);
             ImGui::SliderFloat("Camera Speed", &config.cameraSpeed, 1.0f, 200.0f);
@@ -368,6 +384,10 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
             ImGui::Checkbox("Frustum Culling", &config.isFrustumCullingEnabled);
             ImGui::Checkbox("Hidden Face Culling", &config.isHiddenWallCullingEnabled);
             ImGui::Checkbox("Show ChunkColumn Borders", &config.showChunkColumnsBorder);
+            ImGui::Checkbox("Show Crosshair", &config.isCrosshairEnabled);
+            ImGui::Checkbox("Show Coords HUD", &config.isCoordsHudEnabled);
+            ImGui::Checkbox("Show Chunk Stats HUD", &config.isChunkHudEnabled);
+            ImGui::Checkbox("Transparent Block Camera Filter", &config.isTransparentBlockCameraFilterEnabled);
             ImGui::EndTabItem();
         }
 

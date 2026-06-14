@@ -204,6 +204,22 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 
 
 
+std::vector<ChunkColumn*> World::getLoadedColumns() const 
+{
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+
+	std::vector<ChunkColumn*> activeColumns;
+	activeColumns.reserve(columnsMap.size());
+
+	for (const auto& [coords, column] : columnsMap) {
+		activeColumns.push_back(column.get());
+	}
+
+	return activeColumns;
+}
+
+
+
 void World::setBlock(int x, int y, int z, BlockID blockID)
 {
 

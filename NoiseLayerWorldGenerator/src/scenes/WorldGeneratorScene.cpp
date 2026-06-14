@@ -138,7 +138,22 @@ void WorldGeneratorScene::render()
             }
         }
 
+    }
+}
 
+
+void WorldGeneratorScene::onImGuiRender()
+{
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoMove;
+
+
+    //----------------------Filtr na kamere w bloku przeźroczystym
+    if (config.isTransparentBlockCameraFilterEnabled) {
         if (worldRenderer && worldRenderer->isCameraUnderwater) {
             ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
@@ -149,84 +164,76 @@ void WorldGeneratorScene::render()
             ImU32 filterColor = IM_COL32(r, g, b, 140);
             ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.0f, 0.0f), screenSize, filterColor);
         }
-
-
     }
-}
 
 
-void WorldGeneratorScene::onImGuiRender()
-{
+
     //-----------------------COORDS AND FPS MENU
+    if (config.isCoordsHudEnabled) {
 
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav |
-        ImGuiWindowFlags_NoMove;
+        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.3f);
 
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.3f);
-
-    if (ImGui::Begin("CORDHUD", nullptr, window_flags)) {
-        if (camera) {
-            ImGui::Text("X: %.2f", camera.get()->position.x);
-            ImGui::SameLine();
-            ImGui::Text(" | ");
-            ImGui::SameLine();
-            ImGui::Text("Y: %.2f", camera.get()->position.y);
-            ImGui::SameLine();
-            ImGui::Text(" | ");
-            ImGui::SameLine();
-            ImGui::Text("Z: %.2f", camera.get()->position.z);
-            ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+        if (ImGui::Begin("CORDHUD", nullptr, window_flags)) {
+            if (camera) {
+                ImGui::Text("X: %.2f", camera.get()->position.x);
+                ImGui::SameLine();
+                ImGui::Text(" | ");
+                ImGui::SameLine();
+                ImGui::Text("Y: %.2f", camera.get()->position.y);
+                ImGui::SameLine();
+                ImGui::Text(" | ");
+                ImGui::SameLine();
+                ImGui::Text("Z: %.2f", camera.get()->position.z);
+                ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+            }
+            ImGui::Separator();
         }
-        ImGui::Separator();
+        ImGui::End();
     }
-    ImGui::End();
 
 
 
     //-----------------------CHUNK DATA MENU
+    if (config.isChunkHudEnabled) {
+        ImVec2 screenSize = ImGui::GetIO().DisplaySize;
 
-    ImVec2 screenSize2 = ImGui::GetIO().DisplaySize;
+        ImGui::SetNextWindowPos(ImVec2(10.0f, screenSize.y - 10.0f), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+        ImGui::SetNextWindowBgAlpha(0.3f);
 
-    ImGui::SetNextWindowPos(ImVec2(10.0f, screenSize2.y - 10.0f), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
-    ImGui::SetNextWindowBgAlpha(0.3f);
+        if (ImGui::Begin("RENDER_STATS_HUD", nullptr, window_flags)) {
 
-    if (ImGui::Begin("RENDER_STATS_HUD", nullptr, window_flags)) {
+            size_t visibleColsCount = 0;
+            if (worldRenderer) {
+                visibleColsCount = worldRenderer->getVisibleColumns().size();
+            }
 
-        size_t visibleColsCount = 0;
-        if (worldRenderer) {
-            visibleColsCount = worldRenderer->getVisibleColumns().size();
+            size_t totalColsCount = 0;
+            if (world) {
+                totalColsCount = world->getLoadedChunkColumnsCount();
+            }
+
+            int heightInChunks = config.worldHeightInChunks;
+
+            ImGui::SetWindowFontScale(1.3f);
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "CHUNKS:");
+            ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "RENDERED (Visible)");
+            ImGui::Text("Columns : %zu", visibleColsCount);
+            ImGui::Text("Chunks  : %zu", visibleColsCount * heightInChunks);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "TOTAL IN MEMORY");
+            ImGui::Text("Columns : %zu", totalColsCount);
+            ImGui::Text("Chunks  : %zu", totalColsCount * heightInChunks);
         }
-
-        size_t totalColsCount = 0;
-        if (world) {
-            totalColsCount = world->getLoadedChunkColumnsCount();
-        }
-
-        int heightInChunks = config.worldHeightInChunks;
-
-        ImGui::SetWindowFontScale(1.3f);
-        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "CHUNKS:");
-        ImGui::SetWindowFontScale(1.0f);
-
-        ImGui::Separator();
-
-        ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "RENDERED (Visible)");
-        ImGui::Text("Columns : %zu", visibleColsCount);
-        ImGui::Text("Chunks  : %zu", visibleColsCount * heightInChunks);
-
-        ImGui::Spacing();
-        ImGui::Separator();
-
-        ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "TOTAL IN MEMORY");
-        ImGui::Text("Columns : %zu", totalColsCount);
-        ImGui::Text("Chunks  : %zu", totalColsCount * heightInChunks);
+        ImGui::End();
     }
-    ImGui::End();
 
 
 
@@ -267,8 +274,25 @@ void WorldGeneratorScene::onImGuiRender()
 
 
 
-    //-----------------------GŁÓNE MENU
+    //-----------------------CELOWNIK
+    if (config.isCrosshairEnabled && !isCursorMode) {
+        ImVec2 center = ImVec2(screenSize.x * 0.5f, screenSize.y * 0.5f);
 
+        ImDrawList* drawList = ImGui::GetForegroundDrawList();
+
+        float dotSize = 4.0f;
+        float gap = 2.0f;
+        ImU32 color = IM_COL32(30, 255, 30, 255);
+
+        drawList->AddRectFilled(ImVec2(center.x - gap - dotSize, center.y - dotSize * 0.5f), ImVec2(center.x - gap, center.y + dotSize * 0.5f), color);
+        drawList->AddRectFilled(ImVec2(center.x + gap, center.y - dotSize * 0.5f), ImVec2(center.x + gap + dotSize, center.y + dotSize * 0.5f), color);
+        drawList->AddRectFilled(ImVec2(center.x - dotSize * 0.5f, center.y - gap - dotSize), ImVec2(center.x + dotSize * 0.5f, center.y - gap), color);
+        drawList->AddRectFilled(ImVec2(center.x - dotSize * 0.5f, center.y + gap), ImVec2(center.x + dotSize * 0.5f, center.y + gap + dotSize), color);
+    }
+
+
+
+    //-----------------------GŁÓNE MENU
     if (worldGenUI) {
         worldGenUI->renderImGui(isCursorMode);
     }

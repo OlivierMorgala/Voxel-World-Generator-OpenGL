@@ -19,6 +19,11 @@ struct WorldConfig
 	bool showChunkColumnsBorder = false;
 	bool isFrustumCullingEnabled = true;
 	bool isHiddenWallCullingEnabled = true;
+	bool isCrosshairEnabled = false;
+	bool isChunkHudEnabled = false;
+	bool isCoordsHudEnabled = true;
+	bool isTransparentBlockCameraFilterEnabled = true;
+
 
 	//-----------------------------
 

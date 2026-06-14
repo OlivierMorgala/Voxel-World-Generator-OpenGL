@@ -2,7 +2,7 @@
 
 WorldRenderer::WorldRenderer()
 {
-	visibleColumns.reserve(1200);
+	visibleColumns.reserve(3000);
 }
 
 void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, float windowAspectRatio)
@@ -53,13 +53,15 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 		frustumCamera = camera.getFrustum(windowAspectRatio);
 	}
 
-	for (int x = -config.renderDistance; x <= config.renderDistance; x++) {
-		for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
+	std::vector<ChunkColumn*> loadedColumns = world.getLoadedColumns();
 
-			ChunkColumn* column = world.getChunkColumn(cameraColumnX + x, cameraColumnZ + z);
+	for (ChunkColumn* column : loadedColumns) {
 
-			if (column && column->hasMesh())
-			{
+		int dx = column->getX() - cameraColumnX;
+		int dz = column->getZ() - cameraColumnZ;
+
+		if (std::abs(dx) <= config.renderDistance && std::abs(dz) <= config.renderDistance) {
+			if (column->hasMesh()) {
 				bool isVisible = true;
 
 				if (config.isFrustumCullingEnabled) {
@@ -74,15 +76,14 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 					AABBcolumn.max.z = AABBcolumn.min.z + Chunk::CHUNK_SIZE;
 
 					isVisible = camera.isAABoundingBoxVisible(frustumCamera, AABBcolumn);
+
 				}
 
 				if (isVisible) {
 					column->renderOpaque(&shader);
 					visibleColumns.push_back(column);
 				}
-
 			}
-
 		}
 	}
 
