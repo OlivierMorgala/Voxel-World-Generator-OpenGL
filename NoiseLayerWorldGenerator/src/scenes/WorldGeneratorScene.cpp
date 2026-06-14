@@ -85,10 +85,9 @@ void WorldGeneratorScene::onUpdate(float deltaTime)
         raycast->RaycastDDA(camera->position, camera->front);
     }
 
-    if (blockPlaceDestroy && raycast->BlockHit)
+    if (blockPlaceDestroy && raycast->BlockHit && (Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_2) || Input::isKeyJustPressed(GLFW_KEY_E)))
     {
         blockPlaceDestroy->DestroyBlock(raycast->HitBlockPosition);
-        
     }
 }
 
