@@ -1,7 +1,9 @@
 #include "scenes/StartingScene.h"
 #include "scenes/WorldGeneratorScene.h" 
 #include "managers/SceneManager.h"      
-#include "managers/TextureManager.h"    
+#include "managers/TextureManager.h"  
+#include "world\generationAlgorithms\PerlinNoise2D.h"
+#include "world\generationAlgorithms\FlatFill.h"
 #include <imgui.h>
 #include <iostream>
 #include <memory>
@@ -131,24 +133,39 @@ void StartingScene::onImGuiRender()
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.88f, 0.90f, 0.93f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.30f, 0.32f, 0.35f, 0.40f));
 
+        std::vector<TerrainLayer> preset;
+
         // PRZYCISK 1
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         if (ImGui::Button("Mountain Valley Preset", ImVec2(buttonWidth, buttonHeight))) {
-            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>());
+            preset.clear();
+
+            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
         }
 
         // PRZYCISK 2
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
         if (ImGui::Button("Desert Dunes Preset", ImVec2(buttonWidth, buttonHeight))) {
-            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>());
+            preset.clear();
+
+
+            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
         }
 
         // PRZYCISK 3
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
         if (ImGui::Button("Frozen Peaks Preset", ImVec2(buttonWidth, buttonHeight))) {
-            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>());
+            preset.clear();
+
+            TerrainLayer peaks("High Peaks", 20, 110, 1, std::make_unique<PerlinNoise2D>(456, 0.08f, 0.9f, 6, 2.2f, 0.6f));
+
+            peaks.blendMode = BlendMode::NORMAL;
+
+            preset.push_back(std::move(peaks));
+
+            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
         }
 
         ImGui::PopStyleColor(5);

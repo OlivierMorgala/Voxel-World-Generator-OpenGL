@@ -18,7 +18,7 @@
 class WorldGeneratorScene : public Scene
 {
 public:
-	WorldGeneratorScene() = default;
+	WorldGeneratorScene(std::vector<TerrainLayer> initialLayers = {});
 	~WorldGeneratorScene() override = default;
 
 	void onEnter() override;
@@ -29,6 +29,8 @@ public:
 	void onImGuiRender() override;
 
 private:
+	std::vector<TerrainLayer> presetLayers;
+
 	std::unique_ptr<Camera> camera;
 	//Flaga która sprawdza czy sterujemy myszą lub kamerą
 	bool isCursorMode = false;

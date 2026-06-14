@@ -6,6 +6,11 @@
 #include "world\generationAlgorithms\PerlinNoise2D.h"
 #include "world\generationAlgorithms\FlatFill.h"
 
+WorldGeneratorScene::WorldGeneratorScene(std::vector<TerrainLayer> initialLayers) {
+    presetLayers = std::move(initialLayers);
+}
+
+
 void WorldGeneratorScene::onEnter()
 {
 	std::cout << "+[Scene] LOADED: WorldGeneratorScene" << std::endl;
@@ -26,14 +31,18 @@ void WorldGeneratorScene::onEnter()
 	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
 
 
-
-    TerrainLayer perlinLayer("Perlin", 5, 50, 1, std::make_unique<PerlinNoise2D>(12345, 0.090f, 0.700f, 6, 1.740f, 0.400f));
-    perlinLayer.blendMode = BlendMode::NORMAL;
-    worldTerrainGenerator->generationLayers.push_back(std::move(perlinLayer));
-
-    TerrainLayer skyLayer("Flat Sky", 60, 70, 2, std::make_unique<FlatFill>());
-    skyLayer.blendMode = BlendMode::ABSOLUTE;
-    worldTerrainGenerator->generationLayers.push_back(std::move(skyLayer));
+    //Dodawanie warst przekazanych z kostruktorze
+    if (!presetLayers.empty()) {
+        for (TerrainLayer& layer : presetLayers) {
+            worldTerrainGenerator->generationLayers.push_back(std::move(layer));
+        }
+        presetLayers.clear();
+    }
+    else {
+        TerrainLayer baseLayer("Base Fill", 0, 5, 2, std::make_unique<FlatFill>());
+        baseLayer.blendMode = BlendMode::NORMAL;
+        worldTerrainGenerator->generationLayers.push_back(std::move(baseLayer));
+    }
 
 
 

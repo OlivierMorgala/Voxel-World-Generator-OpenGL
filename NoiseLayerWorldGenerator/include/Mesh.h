@@ -20,6 +20,8 @@ public:
 	// Funkcja która renderuje siatkę. 
 	void draw() const;
 
+	void updateData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
+
 private:
 	// Identyfikatory VAO (Vertex Array Object), VBO (Vertex Buffer Object) i EBO (Element Buffer Object) używane do przechowywania danych wierzchołków na GPU
 	unsigned int VAO;

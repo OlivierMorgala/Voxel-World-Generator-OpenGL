@@ -14,6 +14,8 @@ ChunkColumn::ChunkColumn(int x, int z) : columnX(x), columnZ(z)
 	}
 }
 
+
+
 void ChunkColumn::setBlock(int x, int y, int z, BlockID blockID)
 {
 	if (y < 0 || y >= chunks.size() * Chunk::CHUNK_SIZE) { return; }
@@ -27,6 +29,8 @@ void ChunkColumn::setBlock(int x, int y, int z, BlockID blockID)
 	isRerenderNeeded = true;
 }
 
+
+
 BlockID ChunkColumn::getBlock(int x, int y, int z) const
 {
 	if (y < 0 || y >= chunks.size() * Chunk::CHUNK_SIZE) { return 0; }
@@ -38,6 +42,8 @@ BlockID ChunkColumn::getBlock(int x, int y, int z) const
 	return chunks[chunkIndex]->getBlock(x, localY, z);
 }
 
+
+
 Chunk* ChunkColumn::getChunk(int yIndex) const 
 {
 	if (yIndex >= 0 && yIndex < chunks.size()) {
@@ -45,6 +51,8 @@ Chunk* ChunkColumn::getChunk(int yIndex) const
 	}
 	return nullptr;
 }
+
+
 
 void ChunkColumn::buildMeshFromPendingData(const World& world)
 {
@@ -108,40 +116,57 @@ void ChunkColumn::buildMeshFromPendingData(const World& world)
 	hasPendingMeshData = true;
 }
 
+
+
 void ChunkColumn::uploadMeshToGPU()
 {
 	std::lock_guard<std::mutex> meshLock(meshMutex);
 
 	if (!hasPendingMeshData) { return; }
-	
+
 	if (!pendingOpaqueVertices.empty()) {
-		opaqueColumnMesh = std::make_unique<Mesh>(pendingOpaqueVertices, pendingOpaqueIndices);
+
+		if (!opaqueColumnMesh) {
+			opaqueColumnMesh = std::make_unique<Mesh>(pendingOpaqueVertices, pendingOpaqueIndices);
+		}
+		else 
+		{
+			opaqueColumnMesh->updateData(pendingOpaqueVertices, pendingOpaqueIndices);
+		}
+
 	}
-	else {
-		opaqueColumnMesh.reset();
+	else if (opaqueColumnMesh) {
+		opaqueColumnMesh->updateData(pendingOpaqueVertices, pendingOpaqueIndices);
 	}
 
+
 	if (!pendingTransparentVertices.empty()) {
-		transparentColumnMesh = std::make_unique<Mesh>(pendingTransparentVertices, pendingTransparentIndices);
+
+		if (!transparentColumnMesh) {
+			transparentColumnMesh = std::make_unique<Mesh>(pendingTransparentVertices, pendingTransparentIndices);
+		}
+		else
+		{
+			transparentColumnMesh->updateData(pendingTransparentVertices, pendingTransparentIndices);
+		}
+
 	}
-	else {
-		transparentColumnMesh.reset();
+	else if (transparentColumnMesh) {
+		transparentColumnMesh->updateData(pendingTransparentVertices, pendingTransparentIndices);
 	}
 
 	pendingOpaqueVertices.clear();
-	pendingOpaqueVertices.shrink_to_fit();
 	pendingOpaqueIndices.clear();
-	pendingOpaqueIndices.shrink_to_fit();
 
 	pendingTransparentVertices.clear();
-	pendingTransparentVertices.shrink_to_fit();
 	pendingTransparentIndices.clear();
-	pendingTransparentIndices.shrink_to_fit();
 
 	hasPendingMeshData = false;
 	isMeshGenerated = true;
 	isRerenderNeeded = false;
 }
+
+
 
 void ChunkColumn::renderOpaque(Shader* shader) const
 {
@@ -153,6 +178,8 @@ void ChunkColumn::renderOpaque(Shader* shader) const
 	opaqueColumnMesh->draw();
 }
 
+
+
 void ChunkColumn::renderTransparent(Shader* shader) const
 {
 	if (!transparentColumnMesh) { return; }
@@ -163,25 +190,35 @@ void ChunkColumn::renderTransparent(Shader* shader) const
 	transparentColumnMesh->draw();
 }
 
+
+
 int ChunkColumn::getX() const 
 { 
 	return columnX; 
 }
+
+
 
 int ChunkColumn::getZ() const 
 { 
 	return columnZ; 
 }
 
+
+
 std::mutex& ChunkColumn::getMeshMutex() 
 {
 	return meshMutex;
 }
 
+
+
 bool ChunkColumn::hasMesh() const 
 {
 	return isMeshGenerated;
 }
+
+
 
 bool ChunkColumn::needsRerender() const 
 {

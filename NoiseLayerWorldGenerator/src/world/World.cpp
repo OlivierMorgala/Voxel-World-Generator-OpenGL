@@ -154,10 +154,18 @@ void World::addChunkColumn(int x, int z)
 		columnsMap[position] = std::move(column);
 	}
 
-	{
-		std::lock_guard<std::mutex> meshLock(columnPtr->getMeshMutex());
-		columnPtr->buildMeshFromPendingData(*this);
-	}
+	enqueueTask([this, columnPtr]() {
+		{
+			std::lock_guard<std::mutex> meshLock(columnPtr->getMeshMutex());
+			columnPtr->buildMeshFromPendingData(*this);
+		}
+
+		bool expected = false;
+		if (columnPtr->isMeshUploadPending.compare_exchange_strong(expected, true)) {
+			std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+			uploadToGPUQueue.push_back(columnPtr);
+		}
+	});
 
 	constexpr int neighborShiftX[] = { 1, -1, 0, 0 };
 	constexpr int neighborShiftZ[] = { 0, 0, 1, -1 };
@@ -166,23 +174,19 @@ void World::addChunkColumn(int x, int z)
 		ChunkColumn* neighborColumn = getChunkColumn(x + neighborShiftX[i], z + neighborShiftZ[i]);
 
 		if (neighborColumn) {
-			std::lock_guard<std::mutex> neighborMeshLock(neighborColumn->getMeshMutex());
-			neighborColumn->buildMeshFromPendingData(*this);
-			
-			bool expected = false;
-			if (neighborColumn->isMeshUploadPending.compare_exchange_strong(expected, true)) {
-				std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
-				uploadToGPUQueue.push_back(neighborColumn);
-			}
+			enqueueTask([this, neighborColumn]() {
+				{
+					std::lock_guard<std::mutex> neighborMeshLock(neighborColumn->getMeshMutex());
+					neighborColumn->buildMeshFromPendingData(*this);
+				}
+
+				bool expected = false;
+				if (neighborColumn->isMeshUploadPending.compare_exchange_strong(expected, true)) {
+					std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+					uploadToGPUQueue.push_back(neighborColumn);
+				}
+			});
 		}
-	}
-
-
-	
-	bool expected = false;
-	if (columnPtr->isMeshUploadPending.compare_exchange_strong(expected, true)) {
-		std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
-		uploadToGPUQueue.push_back(columnPtr);
 	}
 	
 }

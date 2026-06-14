@@ -5,7 +5,7 @@ struct WorldConfig
 	//GŁÓWNE----------------------
 
 	int worldSeed = 1;
-	int renderDistance = 22;
+	int renderDistance = 16;
 
 	//KAMERA----------------------
 

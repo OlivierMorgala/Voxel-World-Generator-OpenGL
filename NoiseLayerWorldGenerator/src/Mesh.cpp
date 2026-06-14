@@ -19,13 +19,13 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>&
 
 	//Przesłanie danych wierzchołków z CPU do GPU poprzez wiązanie VBO i kopiowanie danych wierzchołków do tego bufora, co umożliwia GPU dostęp do tych danych podczas renderowania
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
 
 	//Jeśli mamy indeksy, to tworzymy i konfigurujemy EBO (Element Buffer Object) który przechowuje dane indeksów używane do renderowania
 	if (indexCount > 0) {
 		glGenBuffers(1, &EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
 	}
 
 	setupAttributes();
@@ -75,4 +75,29 @@ void Mesh::draw() const
 
 	// Odpinanie VAO po zakończeniu renderowania
 	glBindVertexArray(0);
+}
+
+void Mesh::updateData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
+
+	indexCount = static_cast<int>(indices.size());
+	vertexCount = static_cast<int>(vertices.size());
+
+	if (vertexCount == 0) return;
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
+
+	if (indexCount > 0) {
+		if (EBO == 0) {
+			glGenBuffers(1, &EBO);
+		}
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+	}
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
