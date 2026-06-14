@@ -30,6 +30,7 @@ public:
 
 	virtual float evaluate(float x, float z) = 0;
 	virtual void renderImGui() = 0;
+	virtual void setSeed(int newSeed) = 0;
 };
 
 class TerrainLayer {

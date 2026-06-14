@@ -33,6 +33,7 @@
     <ClCompile Include="src\Input.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
     <ClCompile Include="src\managers\SceneManager.cpp" />
+    <ClCompile Include="src\managers\TextureManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\scenes\LoadingScene.cpp" />
@@ -43,6 +44,7 @@
     <ClCompile Include="src\world\BlockType.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkColumn.cpp" />
+    <ClCompile Include="src\world\DebugRenderer.cpp" />
     <ClCompile Include="src\world\generationAlgorithms\FlatFill.cpp" />
     <ClCompile Include="src\world\generationAlgorithms\PerlinNoise2D.cpp" />
     <ClCompile Include="src\world\generationAlgorithms\TerrainModifiers.cpp" />
@@ -58,6 +60,7 @@
     <ClInclude Include="include\Input.h" />
     <ClInclude Include="include\managers\InputManager.h" />
     <ClInclude Include="include\managers\SceneManager.h" />
+    <ClInclude Include="include\managers\TextureManager.h" />
     <ClInclude Include="include\managers\WindowManager.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\scenes\LoadingScene.h" />
@@ -65,9 +68,11 @@
     <ClInclude Include="include\scenes\StartingScene.h" />
     <ClInclude Include="include\scenes\WorldGeneratorScene.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\stb\stb_image.h" />
     <ClInclude Include="include\world\BlockType.h" />
     <ClInclude Include="include\world\Chunk.h" />
     <ClInclude Include="include\world\ChunkColumn.h" />
+    <ClInclude Include="include\world\DebugRenderer.h" />
     <ClInclude Include="include\world\generationAlgorithms\FlatFill.h" />
     <ClInclude Include="include\world\generationAlgorithms\PerlinNoise2D.h" />
     <ClInclude Include="include\world\generationAlgorithms\TerrainModifiers.h" />
@@ -78,8 +83,13 @@
     <ClInclude Include="include\world\WorldTerrainGenerator.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\test.frag" />
-    <None Include="shaders\test.vert" />
+    <None Include="shaders\border.frag" />
+    <None Include="shaders\border.vert" />
+    <None Include="shaders\main.frag" />
+    <None Include="shaders\main.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\textures\planet-sheet.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

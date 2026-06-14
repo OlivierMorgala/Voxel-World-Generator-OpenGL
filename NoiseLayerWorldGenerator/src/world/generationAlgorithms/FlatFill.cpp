@@ -7,3 +7,7 @@ float FlatFill::evaluate(float x, float z){
 void FlatFill::renderImGui() {
 	ImGui::Text("NO SETTINGS");
 }
+
+void FlatFill::setSeed(int newSeed) {
+
+}

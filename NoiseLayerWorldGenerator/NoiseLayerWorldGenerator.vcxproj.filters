@@ -111,6 +111,12 @@
     <ClCompile Include="src\scenes\StartingScene.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\DebugRenderer.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="src\managers\TextureManager.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\managers\SceneManager.h">
@@ -182,9 +188,25 @@
     <ClInclude Include="include\scenes\StartingScene.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
+    <ClInclude Include="include\world\DebugRenderer.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="include\stb\stb_image.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="include\managers\TextureManager.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\test.frag" />
-    <None Include="shaders\test.vert" />
+    <None Include="shaders\main.frag" />
+    <None Include="shaders\main.vert" />
+    <None Include="shaders\border.vert" />
+    <None Include="shaders\border.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\textures\planet-sheet.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
   </ItemGroup>
 </Project>

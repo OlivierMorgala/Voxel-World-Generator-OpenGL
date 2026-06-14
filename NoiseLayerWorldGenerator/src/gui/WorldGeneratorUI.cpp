@@ -15,9 +15,29 @@ WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* worl
 
 }
 
-void WorldGeneratorUI::renderImGui()
+void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 {
     if (!worldGenerator) return;
+
+
+    float deltaTime = ImGui::GetIO().DeltaTime;
+    float animationSpeed = 3.5f;
+
+    if (isMenuOpen) {
+        openAnimationProgress += animationSpeed * deltaTime;
+        if (openAnimationProgress > 1.0f) { openAnimationProgress = 1.0f;  }
+    }
+    else 
+    {
+        openAnimationProgress -= animationSpeed * deltaTime;
+        if (openAnimationProgress < 0.0f) { openAnimationProgress = 0.0f; }
+    }
+
+    if (openAnimationProgress <= 0.0f) {
+        return;
+    }
+
+    float easedProgress = 1.0f - std::pow(1.0f - openAnimationProgress, 3.0f);
 
     // Obliczanie wymiarów i pozycji panelu
 	bool isLoading = (world->getCurrentState() == WorldState::LOADING);
@@ -26,7 +46,9 @@ void WorldGeneratorUI::renderImGui()
     float screenHeight = ImGui::GetIO().DisplaySize.y;
     float panelWidth = screenWidth / 4.0f;
 
-    ImGui::SetNextWindowPos(ImVec2(screenWidth - panelWidth, 0));
+    float currentX = screenWidth - (panelWidth * easedProgress);
+
+    ImGui::SetNextWindowPos(ImVec2(currentX, 0));
     ImGui::SetNextWindowSize(ImVec2(panelWidth, screenHeight));
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.85f));
@@ -50,8 +72,10 @@ void WorldGeneratorUI::renderImGui()
     ImGui::TextColored(ImVec4(1, 1, 1, 1), "Generator Settings");
     ImGui::Separator();
 
-    static int globalSeed = 12345;
-    ImGui::InputInt("Global Seed", &globalSeed);
+    ImGui::InputInt("Global Seed", &config.worldSeed);
+    ImGui::Spacing();
+
+    ImGui::SliderInt("Render Distance", &config.renderDistance, 1, 60);
     ImGui::Spacing();
 
     std::vector<TerrainLayer>& layers = worldGenerator->generationLayers;
@@ -75,7 +99,7 @@ void WorldGeneratorUI::renderImGui()
             }
 
             if (ImGui::BeginPopupModal("Add Layer", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-                static char nameBuf[64] = "Nowa warstwa";
+                static char nameBuf[64] = "New Layer";
                 static int layerType = 0;
                 static int start_y = 0, end_y = 64;
 
@@ -89,12 +113,20 @@ void WorldGeneratorUI::renderImGui()
 
                 ImGui::InputText("Nazwa", nameBuf, 64);
                 ImGui::Combo("Algorytm", &layerType, "Perlin Noise\0Flat Fill\0");
-                ImGui::InputInt("Start Y", &start_y);
-                ImGui::InputInt("End Y", &end_y);
+                
+                if (ImGui::InputInt("Start Y", &start_y)) {
+                    if (start_y < 0) { start_y = 0; }
+                    if (start_y > end_y) { start_y = end_y; }
+                }
+                if (ImGui::InputInt("End Y", &end_y)) {
+                    if (end_y > 1000) { end_y = 1000; }
+                    if (end_y < start_y) { end_y = start_y; }
+                }
+
                 ImGui::Separator();
 
                 if (!isCreatingNewBlock) {
-                    const auto& blockTypes = BlockDatabase::getAllBlocks();
+                    const std::vector<BlockData>& blockTypes = BlockDatabase::getAllBlocks();
 
                     if (currentBlockIndex >= blockTypes.size()) { currentBlockIndex = 1; }
 
@@ -167,7 +199,7 @@ void WorldGeneratorUI::renderImGui()
 
                 if (ImGui::Button("ADD", ImVec2(120, 0))) {
                     if (layerType == 0) {
-                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<PerlinNoise2D>(globalSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<PerlinNoise2D>(config.worldSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
                     }
                     else if (layerType == 1) {
                         layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<FlatFill>()));
@@ -178,6 +210,7 @@ void WorldGeneratorUI::renderImGui()
                 if(isCreatingNewBlock) { ImGui::EndDisabled(); }
 
                 ImGui::SameLine();
+
                 if (ImGui::Button("Cancel", ImVec2(120, 0))) {
 				    isCreatingNewBlock = false; 
                     ImGui::CloseCurrentPopup();
@@ -187,7 +220,8 @@ void WorldGeneratorUI::renderImGui()
             }
 
             static ImGuiTableFlags tableFlags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable;
-            if (ImGui::BeginTable("LayersTable", 3, tableFlags)) {
+            if (ImGui::BeginTable("LayersTable", 4, tableFlags)) {
+                ImGui::TableSetupColumn("On/Off", ImGuiTableColumnFlags_WidthFixed, 25.0f);
                 ImGui::TableSetupColumn("Nazwa");
                 ImGui::TableSetupColumn("Start Y");
                 ImGui::TableSetupColumn("End Y");
@@ -196,13 +230,22 @@ void WorldGeneratorUI::renderImGui()
                 for (int i = 0; i < layers.size(); i++) {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
+
+                    ImGui::PushID(i);
+                    ImGui::Checkbox("##enabled", &layers[i].isEnabled);
+                    ImGui::PopID();
+
+                    ImGui::TableNextColumn();
                     bool isSelected = (selectedLayerIndex == i);
                     std::string label = layers[i].name + "##" + std::to_string(i);
 
                     // Po kliknięciu wiersza zapamiętujemy indeks i odpalamy flagę przerzucenia zakładki
-                    if (ImGui::Selectable(label.c_str(), isSelected)) {
+                    if (ImGui::Selectable(label.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
                         selectedLayerIndex = i;
-                        activateDetailsTab = true;
+                        
+                        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                            activateDetailsTab = true;
+                        }
                     }
 
                     if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
@@ -222,12 +265,18 @@ void WorldGeneratorUI::renderImGui()
 
                     ImGui::TableNextColumn();
                     ImGui::PushItemWidth(-FLT_MIN);
-                    ImGui::InputInt(("##start" + std::to_string(i)).c_str(), &layers[i].startY, 0, 0);
+                    if(ImGui::InputInt(("##start" + std::to_string(i)).c_str(), &layers[i].startY, 0, 0)) {
+                        if (layers[i].startY < 0) { layers[i].startY = 0; }
+                        if (layers[i].startY > layers[i].endY) { layers[i].startY = layers[i].endY; }
+                    }
                     ImGui::PopItemWidth();
 
                     ImGui::TableNextColumn();
                     ImGui::PushItemWidth(-FLT_MIN);
-                    ImGui::InputInt(("##end" + std::to_string(i)).c_str(), &layers[i].endY, 0, 0);
+                    if(ImGui::InputInt(("##end" + std::to_string(i)).c_str(), &layers[i].endY, 0, 0)) {
+                        if (layers[i].endY > 1000) { layers[i].endY = 1000; }
+                        if (layers[i].endY < layers[i].startY) { layers[i].endY = layers[i].startY; }
+                    }
                     ImGui::PopItemWidth();
                 }
                 ImGui::EndTable();
@@ -306,23 +355,19 @@ void WorldGeneratorUI::renderImGui()
 
         // ZAKŁADKA 3: KAMERA
         if (ImGui::BeginTabItem("Kamera")) {
-            static float fov = 90.0f;
-            static float speed = 5.0f;
-            static bool noClip = true;
-            ImGui::SliderFloat("FOV", &fov, 30.0f, 120.0f);
-            ImGui::SliderFloat("Predkosc", &speed, 1.0f, 50.0f);
-            ImGui::Checkbox("NoClip", &noClip);
+
+            ImGui::SliderFloat("FOV", &config.fov, 80.0f, 110.0f);
+            ImGui::SliderFloat("Camera Speed", &config.cameraSpeed, 1.0f, 200.0f);
+            ImGui::SliderFloat("View Distance", &config.viewDistance, 5.0f, 3000.0f);
             ImGui::EndTabItem();
         }
 
         // ZAKŁADKA 4: ZAAWANSOWANE
-        if (ImGui::BeginTabItem("Zaawansowane")) {
-            static bool frustumCulling = true;
-            static bool hiddenFaceCulling = true;
-            static bool greedyMeshing = true;
-            ImGui::Checkbox("Frustum Culling", &frustumCulling);
-            ImGui::Checkbox("Hidden Face Culling", &hiddenFaceCulling);
-            ImGui::Checkbox("Greedy Meshing", &greedyMeshing);
+        if (ImGui::BeginTabItem("Advanced")) {
+
+            ImGui::Checkbox("Frustum Culling", &config.isFrustumCullingEnabled);
+            ImGui::Checkbox("Hidden Face Culling", &config.isHiddenWallCullingEnabled);
+            ImGui::Checkbox("Show ChunkColumn Borders", &config.showChunkColumnsBorder);
             ImGui::EndTabItem();
         }
 

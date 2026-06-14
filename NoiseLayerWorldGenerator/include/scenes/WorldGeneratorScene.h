@@ -10,6 +10,7 @@
 #include "Input.h"
 #include "world/World.h"
 #include "world/WorldRenderer.h"
+#include "world/DebugRenderer.h"
 #include "world/WorldTerrainGenerator.h"
 #include "managers/WindowManager.h"
 #include "gui/WorldGeneratorUI.h"
@@ -37,6 +38,7 @@ private:
 	std::unique_ptr<World> world;
 	std::unique_ptr<WorldTerrainGenerator> worldTerrainGenerator;
 	std::unique_ptr<WorldRenderer> worldRenderer;
+	std::unique_ptr<DebugRenderer> debugRenderer;
 
 	std::unique_ptr<WorldGeneratorUI> worldGenUI;
 };

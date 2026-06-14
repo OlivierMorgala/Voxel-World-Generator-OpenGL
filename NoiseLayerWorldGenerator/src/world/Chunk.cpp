@@ -195,7 +195,11 @@ BlockID Chunk::getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z, BlockI
 {
 	// Jeśli sąsiad istnieje to pobieramy ID bloku z tego sąsiada na podstawie podanych współrzędnych. Jeśli sąsiad nie istnieje to zwracamy 0 (PUSTY BLOK)
 	if (neighbor) {
-		return neighbor->getBlock(x, y, z);
+		int localX = (x + CHUNK_SIZE) % CHUNK_SIZE;
+		int localY = (y + CHUNK_SIZE) % CHUNK_SIZE;
+		int localZ = (z + CHUNK_SIZE) % CHUNK_SIZE;
+
+		return neighbor->getBlock(localX, localY, localZ);
 	}
 	return fallbackBlockID;
 }

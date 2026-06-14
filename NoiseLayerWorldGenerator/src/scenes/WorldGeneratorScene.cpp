@@ -21,7 +21,7 @@ void WorldGeneratorScene::onEnter()
     BlockDatabase::init();
     //---
 
-    mainShader = std::make_unique<Shader>("shaders/test.vert", "shaders/test.frag");
+    mainShader = std::make_unique<Shader>("shaders/main.vert", "shaders/main.frag");
     
 	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
 
@@ -42,6 +42,7 @@ void WorldGeneratorScene::onEnter()
     world->setTerrainGenerator(worldTerrainGenerator.get());
 
 	worldRenderer = std::make_unique<WorldRenderer>();
+    debugRenderer = std::make_unique<DebugRenderer>();
     worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
 
 	world->regenerateWorld();
@@ -101,7 +102,7 @@ void WorldGeneratorScene::render()
 {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    if (!world || !worldRenderer || !mainShader) return;
+    if (!world || !worldRenderer || !debugRenderer || !mainShader) return;
 
     glm::mat4 view = camera->getViewMatrix();
 	mainShader->setMatrix4("view", view);
@@ -131,24 +132,32 @@ void WorldGeneratorScene::render()
 
         if (world->getCurrentState() == WorldState::PLAYING) {
             worldRenderer->render(*world, *camera, *mainShader, aspectRatio);
+
+            if (config.showChunkColumnsBorder) {
+                debugRenderer->renderChunkBorders(worldRenderer.get()->getVisibleColumns(), *camera, aspectRatio);
+            }
         }
+
+
+        if (worldRenderer && worldRenderer->isCameraUnderwater) {
+            ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+            int r = static_cast<int>(worldRenderer->underwaterColor.r * 255.0f);
+            int g = static_cast<int>(worldRenderer->underwaterColor.g * 255.0f);
+            int b = static_cast<int>(worldRenderer->underwaterColor.b * 255.0f);
+
+            ImU32 filterColor = IM_COL32(r, g, b, 140);
+            ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.0f, 0.0f), screenSize, filterColor);
+        }
+
+
     }
 }
 
 
-
 void WorldGeneratorScene::onImGuiRender()
 {
-    if (worldRenderer && worldRenderer->isCameraUnderwater) {
-        ImVec2 screenSize = ImGui::GetIO().DisplaySize;
-
-        int r = static_cast<int>(worldRenderer->underwaterColor.r * 255.0f);
-        int g = static_cast<int>(worldRenderer->underwaterColor.g * 255.0f);
-        int b = static_cast<int>(worldRenderer->underwaterColor.b * 255.0f);
-
-        ImU32 filterColor = IM_COL32(r, g, b, 140);
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.0f, 0.0f), screenSize, filterColor);
-    }
+    //-----------------------COORDS AND FPS MENU
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_AlwaysAutoResize |
@@ -178,6 +187,50 @@ void WorldGeneratorScene::onImGuiRender()
     ImGui::End();
 
 
+
+    //-----------------------CHUNK DATA MENU
+
+    ImVec2 screenSize2 = ImGui::GetIO().DisplaySize;
+
+    ImGui::SetNextWindowPos(ImVec2(10.0f, screenSize2.y - 10.0f), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.3f);
+
+    if (ImGui::Begin("RENDER_STATS_HUD", nullptr, window_flags)) {
+
+        size_t visibleColsCount = 0;
+        if (worldRenderer) {
+            visibleColsCount = worldRenderer->getVisibleColumns().size();
+        }
+
+        size_t totalColsCount = 0;
+        if (world) {
+            totalColsCount = world->getLoadedChunkColumnsCount();
+        }
+
+        int heightInChunks = config.worldHeightInChunks;
+
+        ImGui::SetWindowFontScale(1.3f);
+        ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "CHUNKS:");
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::Separator();
+
+        ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "RENDERED (Visible)");
+        ImGui::Text("Columns : %zu", visibleColsCount);
+        ImGui::Text("Chunks  : %zu", visibleColsCount * heightInChunks);
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "TOTAL IN MEMORY");
+        ImGui::Text("Columns : %zu", totalColsCount);
+        ImGui::Text("Chunks  : %zu", totalColsCount * heightInChunks);
+    }
+    ImGui::End();
+
+
+
+    //-----------------------PASEK AKTYWNEGO MENU
 
     ImGuiWindowFlags hintFlags = ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_AlwaysAutoResize |
@@ -214,7 +267,9 @@ void WorldGeneratorScene::onImGuiRender()
 
 
 
+    //-----------------------GŁÓNE MENU
+
     if (worldGenUI) {
-        worldGenUI->renderImGui();
+        worldGenUI->renderImGui(isCursorMode);
     }
 }

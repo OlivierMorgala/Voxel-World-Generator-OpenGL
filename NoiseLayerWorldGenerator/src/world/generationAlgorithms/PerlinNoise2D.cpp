@@ -17,13 +17,7 @@ static vector2 gradients[8] = {
 PerlinNoise2D::PerlinNoise2D(unsigned seed, float freq, float amp, int octav, float freqChange, float ampChange)
     : frequency(freq), amplitude(amp), octaves(octav), frequencyChange(freqChange), amplitudeChange(ampChange)
 {
-    permutations.resize(256);
-    std::iota(permutations.begin(), permutations.end(), 0);
-
-    std::default_random_engine engine(seed);
-    std::shuffle(permutations.begin(), permutations.end(), engine);
-
-    permutations.insert(permutations.end(), permutations.begin(), permutations.end());
+    setSeed(seed);
 }
 
 float PerlinNoise2D::evaluate(float x, float z) {
@@ -38,6 +32,17 @@ void PerlinNoise2D::renderImGui() {
     ImGui::DragInt("Octaves", &octaves, 1, 1, 8);
     ImGui::DragFloat("FrequencyChange", &frequencyChange, 0.01f);
     ImGui::DragFloat("AmplitudeChange", &amplitudeChange, 0.01f);
+}
+
+void PerlinNoise2D::setSeed(int newSeed) {
+    permutations.resize(256);
+
+    std::iota(permutations.begin(), permutations.end(), 0);
+    std::default_random_engine engine(newSeed);
+
+    std::shuffle(permutations.begin(), permutations.end(), engine);
+
+    permutations.insert(permutations.end(), permutations.begin(), permutations.end());
 }
 
 float PerlinNoise2D::smoothInterpolation(float t, float x, float y) {

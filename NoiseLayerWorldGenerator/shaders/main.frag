@@ -2,7 +2,7 @@
 out vec4 FragColor;
 
 in vec3 ourColor;  // Kolor odebrany z vertex shadera
-in vec2 TexCoord;  // Współrzędne ściany (0.0 - 1.0)
+in vec2 texCoord;  // Współrzędne ściany (0.0 - 1.0)
 
 uniform float alpha;
 uniform bool isBorderRendered;
@@ -14,8 +14,8 @@ void main()
     float thickness = 0.05; // Grubość ramki
     
     // Sprawdzamy, czy aktualny piksel znajduje się przy którejkolwiek krawędzi
-    bool isBorder = (TexCoord.x < thickness || TexCoord.x > 1.0 - thickness || 
-                     TexCoord.y < thickness || TexCoord.y > 1.0 - thickness);
+    bool isBorder = (texCoord.x < thickness || texCoord.x > 1.0 - thickness || 
+                     texCoord.y < thickness || texCoord.y > 1.0 - thickness);
 
     vec4 finalColor;
     if (isBorder && isBorderRendered) {

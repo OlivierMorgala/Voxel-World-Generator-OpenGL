@@ -2,7 +2,7 @@
 
 WorldRenderer::WorldRenderer()
 {
-
+	visibleColumns.reserve(1200);
 }
 
 void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, float windowAspectRatio)
@@ -12,11 +12,6 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 
 	shader.setMatrix4("view", camera.getViewMatrix());
 	shader.setMatrix4("projection", camera.getProjectionMatrix(windowAspectRatio));
-
-	Frustum frustumCamera;
-	if (isFrustumCullingEnabled) {
-		frustumCamera = camera.getFrustum(windowAspectRatio);
-	}
 
 	int cameraColumnX = static_cast<int>(std::floor(camera.position.x / (Chunk::CHUNK_SIZE)));
 	int cameraColumnZ = static_cast<int>(std::floor(camera.position.z / (Chunk::CHUNK_SIZE)));
@@ -45,13 +40,18 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 
 	shader.setValue("alpha", 1.0f);
 	shader.setValue("isBorderRendered", true);
+	shader.setValue("showColumnBorders", config.showChunkColumnsBorder);
+	shader.setValue("chunkSize", static_cast<float>(Chunk::CHUNK_SIZE));
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 
-	std::vector<ChunkColumn*> visibleColumns;
-	int maxColumns = (config.renderDistance * 2 + 1) * (config.renderDistance * 2 + 1);
-	visibleColumns.reserve(maxColumns);
+	visibleColumns.clear();
+
+	Frustum frustumCamera;
+	if (config.isFrustumCullingEnabled) {
+		frustumCamera = camera.getFrustum(windowAspectRatio);
+	}
 
 	for (int x = -config.renderDistance; x <= config.renderDistance; x++) {
 		for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
@@ -62,7 +62,7 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 			{
 				bool isVisible = true;
 
-				if (isFrustumCullingEnabled) {
+				if (config.isFrustumCullingEnabled) {
 					AA_BoundingBox AABBcolumn;
 
 					AABBcolumn.min.x = column->getX() * Chunk::CHUNK_SIZE;
@@ -100,4 +100,9 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
+}
+
+const std::vector<ChunkColumn*>& WorldRenderer::getVisibleColumns() const 
+{
+	return visibleColumns;
 }

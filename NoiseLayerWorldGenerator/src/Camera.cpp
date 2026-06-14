@@ -22,7 +22,7 @@ glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 {
 	// Prędkość ruchu jest skalowana przez deltaTime, aby zapewnić płynny ruch niezależnie od liczby klatek na sekundę
-	float velocity = movementSpeed * deltaTime;
+	float velocity = config.cameraSpeed * deltaTime;
 
 	// Aktualizujemy pozycję kamery na podstawie kierunku ruchu
 	if (direction == FORWARD)  position += front * velocity;

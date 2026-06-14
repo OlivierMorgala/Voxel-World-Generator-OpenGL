@@ -10,5 +10,6 @@ public:
 
 	float evaluate(float x, float z) override;
 	void renderImGui() override;
+	void setSeed(int newSeed) override;
 };
 

@@ -128,6 +128,14 @@ void World::getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ,
 
 
 
+int World::getLoadedChunkColumnsCount()
+{
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+	return columnsMap.size();
+}
+
+
+
 void World::addChunkColumn(int x, int z)
 {
 	std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
@@ -255,6 +263,7 @@ void World::generateWorldMesh()
 void World::updateWorld()
 {
 	std::vector<ChunkColumn*> chunksToUploadThisFrame;
+	bool isQueueEmpty = true;
 
 	{
 		std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
@@ -275,7 +284,7 @@ void World::updateWorld()
 		column->uploadMeshToGPU();
 	}
 
-	if (currentState == WorldState::LOADING && uploadedChunksCount >= totalChunksToGenerate) {
+	if (currentState == WorldState::LOADING && uploadedChunksCount >= totalChunksToGenerate && isQueueEmpty) {
 		currentState = WorldState::PLAYING;
 		std::cout << "+[WORLD] Zakonczono generowanie swiata!" << std::endl;
 	}
@@ -293,7 +302,7 @@ void World::updateWorld()
 			std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
 			std::lock_guard<std::mutex> generationSetLock(generationSetMutex);
 
-			for (int d = 0; d <= config.renderDistance; d++) {
+			for (int d = 0; d <= config.renderDistance + 1; d++) {
 				for(int x = -d; x <= d; x++) {
 					for(int z = -d; z <= d; z++) {
 
@@ -382,6 +391,28 @@ void World::regenerateWorld()
 	}
 
 
+	if (terrainGenerator && !terrainGenerator->generationLayers.empty()) {
+		int maxAlgorithmHeight = 0;
+
+		for (const TerrainLayer& layer : terrainGenerator->generationLayers) {
+			if (layer.endY > maxAlgorithmHeight) {
+				maxAlgorithmHeight = layer.endY;
+			}
+
+			if (layer.algorithm) {
+				layer.algorithm->setSeed(config.worldSeed);
+			}
+		}
+
+		int optimalHeightInChunks = (maxAlgorithmHeight / Chunk::CHUNK_SIZE) + 1;
+
+		if (optimalHeightInChunks < 1) { optimalHeightInChunks = 2; }
+
+		config.worldHeightInChunks = optimalHeightInChunks;
+		std::cout << "+[WORLD] Optymalna wysokosc: " << config.worldHeightInChunks << "\n";
+	}
+
+
 	{
 		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
 		std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
@@ -391,12 +422,23 @@ void World::regenerateWorld()
 		columnsCurrentlyGenerating.clear();
 	}
 
+	int camColX = 0;
+	int camColZ = 0;
+	if (targetCamera) {
+		camColX = static_cast<int>(std::floor(targetCamera->position.x / Chunk::CHUNK_SIZE));
+		camColZ = static_cast<int>(std::floor(targetCamera->position.z / Chunk::CHUNK_SIZE));
+	}
+
+	int meshRadius = config.renderDistance;
+	int dataRadius = config.renderDistance + 1;
+
+	totalChunksToGenerate = ((meshRadius * 2) + 1) * ((meshRadius * 2) + 1);
 	generatedChunksCount = 0;
 	uploadedChunksCount = 0;
 	currentState = WorldState::LOADING;
 	isGenerating = true;
 
-	generationThread = std::thread([this]() {
+	generationThread = std::thread([this, camColX, camColZ, dataRadius, meshRadius]() {
 
 		std::vector<std::future<void>> localFutures;
 
@@ -411,14 +453,14 @@ void World::regenerateWorld()
 		}
 
 		for (unsigned int t = 0; t < workerThreadsCount; t++) {
-			enqueueTask([this, t, workerThreadsCount]() {
+			enqueueTask([this, t, workerThreadsCount, camColX, camColZ, dataRadius]() {
 
-					for (int x = -config.renderDistance + t; x <= config.renderDistance; x += workerThreadsCount) {
-						for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
+					for (int x = -dataRadius + t; x <= dataRadius; x += workerThreadsCount) {
+						for (int z = -dataRadius; z <= dataRadius; z++) {
 
 							if (!isGenerating) { return; }
 
-							ChunkCords coords = {x, z};
+							ChunkCords coords = {camColX + x, camColZ + z};
 							auto column = std::make_unique<ChunkColumn>(coords.x, coords.z);
 
 							if (terrainGenerator) {
@@ -436,22 +478,20 @@ void World::regenerateWorld()
 		}
 
 		while (pendingTasks > 0) {
-			if (!isGenerating) {
-				return;
-			}
+			if (!isGenerating) { return; }
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		}
 
 		for (unsigned int t = 0; t < workerThreadsCount; t++) {
-			enqueueTask([this, t, workerThreadsCount]() {
+			enqueueTask([this, t, workerThreadsCount, camColX, camColZ, meshRadius]() {
 
-					for (int x = -config.renderDistance + t; x <= config.renderDistance; x += workerThreadsCount) {
-						for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
+					for (int x = -meshRadius + t; x <= meshRadius; x += workerThreadsCount) {
+						for (int z = -meshRadius; z <= meshRadius; z++) {
 
 							if (!isGenerating) { return; }
 
-							ChunkCords coords = { x, z};
+							ChunkCords coords = { camColX + x, camColZ + z };
 							ChunkColumn* colPtr = getChunkColumn(coords.x, coords.z);
 
 							if (colPtr) {
