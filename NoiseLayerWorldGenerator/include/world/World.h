@@ -105,5 +105,7 @@ public:
     void regenerateWorld(); 
 
     int getLoadedChunkColumnsCount();
+
+    void renderAlteredChunks(ChunkColumn* column);
 };
 

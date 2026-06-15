@@ -227,7 +227,8 @@ std::vector<ChunkColumn*> World::getLoadedColumns() const
 void World::setBlock(int x, int y, int z, BlockID blockID)
 {
 
-	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) {
+	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) 
+	{
 		return;
 	}
 
@@ -238,9 +239,26 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 
 	getLocalCoords(x, z, columnX, columnZ, localX, localZ);
 
-	if(auto column = getChunkColumn(columnX, columnZ)) {
+	if (auto column = getChunkColumn(columnX, columnZ))
+	{
 		column->setBlock(localX, y, localZ, blockID);
 	}
+}
+
+void World::renderAlteredChunks(ChunkColumn* column) // METODA ODPOWIADA ZA PONOWNE RENDEROWANIE CHUNKOW KTORE ZOSTALY ZMIENIONE PRZEZ UZYTKOWNIKA -> CZYLI TAKIE NA KTORYM ZNISZCZONO LUB POSTAWIONO BLOK
+{
+	enqueueTask([this, column]() {
+		{
+			std::lock_guard<std::mutex> meshLock(column->getMeshMutex());
+			column->buildMeshFromPendingData(*this);
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(uploadQueueMutex);
+			uploadToGPUQueue.push_back(column);
+		}
+
+		});
 }
 
 

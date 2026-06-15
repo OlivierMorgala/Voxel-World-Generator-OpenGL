@@ -102,6 +102,15 @@
     <ClCompile Include="src\scenes\LoadingScene.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\generationAlgorithms\PerlinNoise3D.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BlockPlaceDestroy.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Raycasting.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
     <ClCompile Include="src\world\TerrainPipeline.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
@@ -177,6 +186,15 @@
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="include\scenes\LoadingScene.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="include\BlockPlaceDestroy.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Raycasting.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="include\world\generationAlgorithms\PerlinNoise3D.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
     <ClInclude Include="include\world\TerrainPipeline.h">

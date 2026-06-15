@@ -81,6 +81,11 @@ void Shader::setValue(const std::string& name, float value) const
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
+void Shader::setValueVec3(const std::string& name, glm::vec3& value) const
+{
+	glUniform3f(glGetUniformLocation(ID, name.c_str()),value.x, value.y, value.z);
+}
+
 void Shader::setMatrix4(const std::string& name, const glm::mat4& matrix) const {
 	//Pobieramy lokalizację uniformu o podanej nazwie w programie shaderów. Ta lokalizacja jest potrzebna do późniejszego ustawienia wartości tego uniformu
 	int location = glGetUniformLocation(ID, name.c_str());

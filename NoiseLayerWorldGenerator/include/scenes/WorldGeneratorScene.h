@@ -3,7 +3,7 @@
 #include <iostream>
 #include "imgui.h"
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "BlockPlaceDestroy.h"
 #include "Shader.h"
 #include "Mesh.h"
 #include "Camera.h"
@@ -40,8 +40,11 @@ private:
 	std::unique_ptr<World> world;
 	std::unique_ptr<WorldTerrainGenerator> worldTerrainGenerator;
 	std::unique_ptr<WorldRenderer> worldRenderer;
+	std::unique_ptr<Raycast> raycast;
+	std::unique_ptr<BlockPlaceDestroy> blockPlaceDestroy;
+	std::unique_ptr<WorldGeneratorUI> worldGenUI;
 	std::unique_ptr<DebugRenderer> debugRenderer;
 
-	std::unique_ptr<WorldGeneratorUI> worldGenUI;
+	std::unique_ptr<ChunkColumn> chunkColumn;
 };
 
