@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\world\generationAlgorithms\SimplexNoise.cpp" />
     <ClCompile Include="src\world\generationAlgorithms\PerlinNoise3D.cpp" />
     <ClCompile Include="src\BlockPlaceDestroy.cpp" />
     <ClCompile Include="main.cpp" />
@@ -78,6 +79,7 @@
     <ClInclude Include="include\world\WorldTerrainGenerator.h" />
     <ClInclude Include="include\Raycasting.h" />
     <ClInclude Include="include\world\generationAlgorithms\PerlinNoise3D.h" />
+    <ClInclude Include="include\world\generationAlgorithms\SimplexNoise.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\test.frag" />
