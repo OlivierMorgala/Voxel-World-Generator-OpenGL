@@ -63,6 +63,19 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
     ImGui::Begin("World Generator Settings", nullptr, windowFlags);
 
+    ImGui::SameLine(ImGui::GetWindowWidth() - 65.0f);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.6f, 0.1f, 0.1f, 1.0f));
+
+    if (ImGui::Button("EXIT", ImVec2(55.0f, 0.0f))) {
+        SceneManager::getInstance().popScene();
+    }
+
+    ImGui::PopStyleColor(3);
+
+    ImGui::Separator();
+
     // Rysowanie jasnej linii po lewej stronie
     ImVec2 p_min = ImGui::GetWindowPos();
     ImVec2 p_max = ImVec2(p_min.x + 3.0f, p_min.y + screenHeight);
@@ -135,7 +148,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                     if (start_y > end_y) { start_y = end_y; }
                 }
                 if (ImGui::InputInt("End Y", &end_y)) {
-                    if (end_y > 1000) { end_y = 1000; }
+                    if (end_y > 500) { end_y = 500; }
                     if (end_y < start_y) { end_y = start_y; }
                 }
 
@@ -153,12 +166,29 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                             ImVec4 col(blockTypes[i].color.x, blockTypes[i].color.y, blockTypes[i].color.z, 1.0f);
 
-							ImGui::PushID(i);
-							ImGui::ColorButton("##color", col, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(15, 15));
+                            if (blockTypes[i].isTransparent) {
+                                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.2f, 0.8f, 1.0f, 1.0f));
+                                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
+                            }
+                            else {
+                                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 1));
+                                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+                            }
+
+                            ImGui::PushID(i);
+                            ImGui::ColorButton("##color", col, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(15, 15));
+                            ImGui::PopStyleVar();
+                            ImGui::PopStyleColor();
+                            
                             ImGui::SameLine();
 
                             if (ImGui::Selectable(blockTypes[i].name.c_str(), isSelected)) {
                                 currentBlockIndex = i;
+                            }
+
+                            if (blockTypes[i].isTransparent) {
+                                ImGui::SameLine();
+                                ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "[T]");
                             }
 
 							ImGui::PopID();
@@ -290,7 +320,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                     ImGui::TableNextColumn();
                     ImGui::PushItemWidth(-FLT_MIN);
                     if(ImGui::InputInt(("##end" + std::to_string(i)).c_str(), &layers[i].endY, 0, 0)) {
-                        if (layers[i].endY > 1000) { layers[i].endY = 1000; }
+                        if (layers[i].endY > 500) { layers[i].endY = 500; }
                         if (layers[i].endY < layers[i].startY) { layers[i].endY = layers[i].startY; }
                     }
                     ImGui::PopItemWidth();
@@ -313,8 +343,46 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
             if (ImGui::BeginTabItem("Layer details", nullptr, tabFlags)) {
                 TerrainLayer& currentLayer = layers[selectedLayerIndex];
 
-                ImGui::TextColored(ImVec4(1, 0.8f, 0.2f, 1), "Settings: %s", currentLayer.name.c_str());
+                ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Settings: %s", currentLayer.name.c_str());
                 ImGui::Separator();
+
+                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "Block Type:");
+                const std::vector<BlockData>& allBlocks = BlockDatabase::getAllBlocks();
+
+                if (currentLayer.blockID < allBlocks.size()) {
+                    if (ImGui::BeginCombo("##ChangeBlock", allBlocks[currentLayer.blockID].name.c_str())) {
+                        for (int i = 0; i < allBlocks.size(); i++) {
+                            bool isSelected = (currentLayer.blockID == i);
+                            ImVec4 col(allBlocks[i].color.x, allBlocks[i].color.y, allBlocks[i].color.z, 1.0f);
+
+                            if (allBlocks[i].isTransparent) {
+                                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.2f, 0.8f, 1.0f, 1.0f));
+                                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+                            }
+                            else {
+                                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+                                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+                            }
+
+                            ImGui::ColorButton(std::to_string(i).c_str(), col, ImGuiColorEditFlags_NoTooltip);
+                            ImGui::PopStyleVar();
+                            ImGui::PopStyleColor();
+
+                            ImGui::SameLine();
+                            if (ImGui::Selectable(allBlocks[i].name.c_str(), isSelected)) {
+                                currentLayer.blockID = i;
+                            }
+
+                            if (allBlocks[i].isTransparent) {
+                                ImGui::SameLine();
+                                ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "[T]");
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+
+                ImGui::Spacing();
                 
                 const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE"};
                 ImGui::Combo("Blending Mode", (int*)&currentLayer.blendMode, blendNames, IM_ARRAYSIZE(blendNames));
@@ -333,7 +401,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                 ImGui::Spacing();
                 ImGui::Separator();
 
-                ImGui::TextColored(ImVec4(0.4f, 0.8f, 1.0f, 1.0f), "Mathematical Modifiers");
+                ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "Mathematical Modifiers (%zu/6)", currentLayer.activeModifiers.size());
                 ImGui::Spacing();
 
                 for (int i = 0; i < currentLayer.activeModifiers.size(); i++) {
@@ -353,16 +421,33 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                 ImGui::Spacing();
 
-                static int modIndex = 0;
-                ImGui::Combo("##ModType", &modIndex, "Invert\0Power\0Terrace\0Ridged\0MesaCurve\0");
-                ImGui::SameLine();
+                if (currentLayer.activeModifiers.size() >= 6) {
+                    ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Maximum number od modifiers (6) reached.");
+                }
+                else {
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.5f, 0.25f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.6f, 0.3f, 1.0f));
 
-                if (ImGui::Button("Add Modifier")) {
-                    if (modIndex == 0) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierInvert>()); }
-                    else if (modIndex == 1) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierPower>()); }
-                    else if (modIndex == 2) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierTerrace>()); }
-                    else if (modIndex == 3) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierRidged>()); }
-                    else if (modIndex == 4) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierMesaCurve>()); }
+                    if (ImGui::Button("Add Modifier", ImVec2(-FLT_MIN, 30))) {
+                        ImGui::OpenPopup("AddModifierMenu");
+                    }
+                    ImGui::PopStyleColor(2);
+
+                    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(9, 9));
+                    if (ImGui::BeginPopup("AddModifierMenu")) {
+                        ImGui::TextDisabled("Select Modifier Type:");
+                        ImGui::Separator();
+
+                        if (ImGui::Selectable("Invert")) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierInvert>()); }
+                        if (ImGui::Selectable("Power")) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierPower>()); }
+                        if (ImGui::Selectable("Terrace")) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierTerrace>()); }
+                        if (ImGui::Selectable("Ridged")) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierRidged>()); }
+                        if (ImGui::Selectable("Mesa Curve")) { currentLayer.activeModifiers.push_back(std::make_unique<ModifierMesaCurve>()); }
+
+                        ImGui::EndPopup();
+                    }
+
+                    ImGui::PopStyleVar();
                 }
 
                 ImGui::EndTabItem();

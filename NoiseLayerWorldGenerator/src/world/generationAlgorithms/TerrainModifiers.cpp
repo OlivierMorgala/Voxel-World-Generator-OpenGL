@@ -40,7 +40,7 @@ float ModifierRidged::modify(float value) {
 }
 
 void ModifierRidged::renderImGui() {
-	ImGui::Text("Ridged Abs");
+	ImGui::Text("Ridged");
 }
 //------------------------------------
 

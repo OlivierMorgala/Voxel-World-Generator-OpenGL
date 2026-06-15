@@ -138,7 +138,7 @@ int World::getLoadedChunkColumnsCount()
 
 void World::addChunkColumn(int x, int z)
 {
-	std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
+	//std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
 
 	ChunkCords position = { x, z };
 	auto column = std::make_unique<ChunkColumn>(x, z);
@@ -354,7 +354,7 @@ void World::updateWorld()
 		}
 
 		for (const auto& coords : chunksToGenerateThisFrame) {
-			std::cout << "+[WORLD] Dodano kolumne do generowania: " << coords.x << ", " << coords.z << std::endl;
+			//std::cout << "+[WORLD] Dodano kolumne do generowania: " << coords.x << ", " << coords.z << std::endl;
 
 			
 			enqueueTask([this, coords]() {

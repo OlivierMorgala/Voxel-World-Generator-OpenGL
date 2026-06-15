@@ -27,11 +27,11 @@ float PerlinNoise2D::evaluate(float x, float z) {
 }
 
 void PerlinNoise2D::renderImGui() {
-    ImGui::DragFloat("Frequency", &frequency, 0.01f);
-    ImGui::DragFloat("Amplitude", &amplitude, 0.1f);
-    ImGui::DragInt("Octaves", &octaves, 1, 1, 8);
-    ImGui::DragFloat("FrequencyChange", &frequencyChange, 0.01f);
-    ImGui::DragFloat("AmplitudeChange", &amplitudeChange, 0.01f);
+    ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.0001f, 2.0f);
+    ImGui::DragFloat("Amplitude", &amplitude, 0.5f, 0.0f, 1000.0f);
+    ImGui::DragInt("Octaves", &octaves, 0.1f, 1, 8);
+    ImGui::DragFloat("FrequencyChange", &frequencyChange, 0.01f, 0.01f, 5.0f);
+    ImGui::DragFloat("AmplitudeChange", &amplitudeChange, 0.01f, 0.01f, 2.0f);
 }
 
 void PerlinNoise2D::setSeed(int newSeed) {
