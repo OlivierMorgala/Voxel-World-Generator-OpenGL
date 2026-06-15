@@ -1,4 +1,14 @@
 #include "scenes\WorldGeneratorScene.h"
+#include "scenes\LoadingScene.h"
+#include "managers\SceneManager.h"
+
+#include "world\TerrainPipeline.h"
+#include "world\generationAlgorithms\PerlinNoise2D.h"
+#include "world\generationAlgorithms\FlatFill.h"
+
+WorldGeneratorScene::WorldGeneratorScene(std::vector<TerrainLayer> initialLayers) {
+    presetLayers = std::move(initialLayers);
+}
 
 
 void WorldGeneratorScene::onEnter()
@@ -12,69 +22,150 @@ void WorldGeneratorScene::onEnter()
 	// Inicjalizacja kamery na pozycji (0, 0, 1) - tymczasowa wartość później bedzie trzeba ja ustalać wzgledem wytworzonego terenu
 	camera = std::make_unique<Camera>(glm::vec3(8.0f, 40.0f, 8.0f));
 
-	//TYMCZASOWO - test renderowania śiwata
+	//TYMCZASOWO
     BlockDatabase::init();
-
-    mainShader = std::make_unique<Shader>("shaders/test.vert", "shaders/test.frag");
-    world = std::make_unique<World>();
-    worldRenderer = std::make_unique<WorldRenderer>();
     //---
+
+    mainShader = std::make_unique<Shader>("shaders/main.vert", "shaders/main.frag");
+    
+	worldTerrainGenerator = std::make_unique<WorldTerrainGenerator>();
+
+
+    //Dodawanie warst przekazanych z kostruktorze
+    if (!presetLayers.empty()) {
+        for (TerrainLayer& layer : presetLayers) {
+            worldTerrainGenerator->generationLayers.push_back(std::move(layer));
+        }
+        presetLayers.clear();
+    }
+    else {
+        TerrainLayer baseLayer("Base Fill", 0, 5, 2, std::make_unique<FlatFill>());
+        baseLayer.blendMode = BlendMode::NORMAL;
+        worldTerrainGenerator->generationLayers.push_back(std::move(baseLayer));
+    }
+
+
+
+    world = std::make_unique<World>();
+    world->setCamera(camera.get());
+    world->setTerrainGenerator(worldTerrainGenerator.get());
+
+	worldRenderer = std::make_unique<WorldRenderer>();
+    debugRenderer = std::make_unique<DebugRenderer>();
+    worldGenUI = std::make_unique<WorldGeneratorUI>(worldTerrainGenerator.get(), world.get());
+
+    // Raycast
+    raycast = std::make_unique<Raycast>(60, world.get(), mainShader.get());
+
+    // KLASA ODPOWIADAJACA ZA STAWIANIE I NISZCZENIE BLOKOW
+    blockPlaceDestroy = std::make_unique<BlockPlaceDestroy>(raycast.get());
+
+	world->regenerateWorld();
+	SceneManager::getInstance().pushScene(std::make_unique<LoadingScene>(world.get()));
 }
+
+
 
 void WorldGeneratorScene::onExit()
 {
     if (window) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
-
 	std::cout << "-[Scene] UNLOADED: WorldGeneratorScene" << std::endl;
 }
+
+
 
 void WorldGeneratorScene::onUpdate(float deltaTime)
 {
 	if (!camera || !window) { return; }
 
-    if (Input::isKeyPressed(GLFW_KEY_W)) camera->processKeyboardInput(Camera::FORWARD, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_S)) camera->processKeyboardInput(Camera::BACKWARD, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_A)) camera->processKeyboardInput(Camera::LEFT, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_D)) camera->processKeyboardInput(Camera::RIGHT, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_LEFT_SHIFT)) camera->processKeyboardInput(Camera::DOWN, deltaTime);
-    if (Input::isKeyPressed(GLFW_KEY_SPACE)) camera->processKeyboardInput(Camera::UP, deltaTime);
+    if (!isCursorMode) {
+        if (Input::isKeyPressed(GLFW_KEY_W)) camera->processKeyboardInput(Camera::FORWARD, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_S)) camera->processKeyboardInput(Camera::BACKWARD, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_A)) camera->processKeyboardInput(Camera::LEFT, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_D)) camera->processKeyboardInput(Camera::RIGHT, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_LEFT_SHIFT)) camera->processKeyboardInput(Camera::DOWN, deltaTime);
+        if (Input::isKeyPressed(GLFW_KEY_SPACE)) camera->processKeyboardInput(Camera::UP, deltaTime);
+    }
 
-    glm::vec2 delta = Input::getMouseDelta();
-    camera->processMouseMovement(delta.x, delta.y);
+    if (Input::isKeyJustPressed(GLFW_KEY_ESCAPE)) {
+        isCursorMode = !isCursorMode;
+        glfwSetInputMode(window, GLFW_CURSOR, isCursorMode ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+
+        if (isCursorMode) {
+			ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+        }
+        else {
+            ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+        }
+    }
+
+    if (!isCursorMode) {
+        glm::vec2 delta = Input::getMouseDelta();
+        camera->processMouseMovement(delta.x, delta.y);
+    }
 
     if (world) {
-        world->updateWorld(camera->position);
+        world->updateWorld();
+    }
+
+    if (raycast)
+    {
+        raycast->RaycastDDA(camera->position, camera->front);
+    }
+
+    if (blockPlaceDestroy && raycast->BlockHit && (Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_2) || Input::isKeyJustPressed(GLFW_KEY_E)))
+    {
+        blockPlaceDestroy->DestroyBlock(raycast->HitBlockPosition);
     }
 }
 
+
+
 void WorldGeneratorScene::render()
 {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	// Ustawienie macierzy widoku kamery w shaderze
-	glm::mat4 view = camera->getViewMatrix();
+    if (!world || !worldRenderer || !debugRenderer || !mainShader) return;
+
+    glm::mat4 view = camera->getViewMatrix();
 	mainShader->setMatrix4("view", view);
 
-    //TYMCZASOWO - test ładowania shaderów
-    if (!world || !worldRenderer || !mainShader) return;
-
-	GLFWwindow* window = WindowManager::getInstance().getMainWindow();
 
     if (window) {
         int width;
         int height;
         glfwGetFramebufferSize(window, &width, &height);
+
+        if (height == 0) { height = 1; }
         float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
+        glViewport(0, 0, width, height);
+
+        if (worldRenderer->isCameraUnderwater) {
+            glm::vec3 depthColor = worldRenderer->underwaterColor * 0.4f;
+            glClearColor(depthColor.r, depthColor.g, depthColor.b, 1.0f);
+        }
+        else {
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        worldRenderer->render(*world, *camera, *mainShader, aspectRatio);
+
+
+        if (world->getCurrentState() == WorldState::PLAYING) {
+            worldRenderer->render(*world, *camera, *mainShader, aspectRatio);
+
+            if (config.showChunkColumnsBorder) {
+                debugRenderer->renderChunkBorders(worldRenderer.get()->getVisibleColumns(), *camera, aspectRatio);
+            }
+        }
+
     }
-    //---
 }
+
 
 void WorldGeneratorScene::onImGuiRender()
 {
@@ -85,24 +176,149 @@ void WorldGeneratorScene::onImGuiRender()
         ImGuiWindowFlags_NoNav |
         ImGuiWindowFlags_NoMove;
 
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.3f);
 
-    if (ImGui::Begin("CORDHUD", nullptr, window_flags)) {
-        if (camera) {
-            ImGui::Text("X: %.2f", camera.get()->position.x);
-            ImGui::SameLine();
-            ImGui::Text(" | ");
-            ImGui::SameLine();
-            ImGui::Text("Y: %.2f", camera.get()->position.y);
-            ImGui::SameLine();
-            ImGui::Text(" | ");
-            ImGui::SameLine();
-            ImGui::Text("Z: %.2f", camera.get()->position.z);
-            ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+    //----------------------Filtr na kamere w bloku przeźroczystym
+    if (config.isTransparentBlockCameraFilterEnabled) {
+        if (worldRenderer && worldRenderer->isCameraUnderwater) {
+            ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+            int r = static_cast<int>(worldRenderer->underwaterColor.r * 255.0f);
+            int g = static_cast<int>(worldRenderer->underwaterColor.g * 255.0f);
+            int b = static_cast<int>(worldRenderer->underwaterColor.b * 255.0f);
+
+            ImU32 filterColor = IM_COL32(r, g, b, 140);
+            ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.0f, 0.0f), screenSize, filterColor);
         }
-        ImGui::Separator();
+    }
+
+
+
+    //-----------------------COORDS AND FPS MENU
+    if (config.isCoordsHudEnabled) {
+
+        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.3f);
+
+        if (ImGui::Begin("CORDHUD", nullptr, window_flags)) {
+            if (camera) {
+                ImGui::Text("X: %.2f", camera.get()->position.x);
+                ImGui::SameLine();
+                ImGui::Text(" | ");
+                ImGui::SameLine();
+                ImGui::Text("Y: %.2f", camera.get()->position.y);
+                ImGui::SameLine();
+                ImGui::Text(" | ");
+                ImGui::SameLine();
+                ImGui::Text("Z: %.2f", camera.get()->position.z);
+                ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+            }
+            ImGui::Separator();
+        }
+        ImGui::End();
+    }
+
+
+
+    //-----------------------CHUNK DATA MENU
+    if (config.isChunkHudEnabled) {
+        ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+        ImGui::SetNextWindowPos(ImVec2(10.0f, screenSize.y - 10.0f), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+        ImGui::SetNextWindowBgAlpha(0.3f);
+
+        if (ImGui::Begin("RENDER_STATS_HUD", nullptr, window_flags)) {
+
+            size_t visibleColsCount = 0;
+            if (worldRenderer) {
+                visibleColsCount = worldRenderer->getVisibleColumns().size();
+            }
+
+            size_t totalColsCount = 0;
+            if (world) {
+                totalColsCount = world->getLoadedChunkColumnsCount();
+            }
+
+            int heightInChunks = config.worldHeightInChunks;
+
+            ImGui::SetWindowFontScale(1.3f);
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "CHUNKS:");
+            ImGui::SetWindowFontScale(1.0f);
+
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "RENDERED (Visible)");
+            ImGui::Text("Columns : %zu", visibleColsCount);
+            ImGui::Text("Chunks  : %zu", visibleColsCount * heightInChunks);
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 1.0f, 1.0f), "TOTAL IN MEMORY");
+            ImGui::Text("Columns : %zu", totalColsCount);
+            ImGui::Text("Chunks  : %zu", totalColsCount * heightInChunks);
+        }
+        ImGui::End();
+    }
+
+
+
+    //-----------------------PASEK AKTYWNEGO MENU
+
+    ImGuiWindowFlags hintFlags = ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoMove;
+
+    ImVec2 screenSize = ImGui::GetIO().DisplaySize;
+
+    ImGui::SetNextWindowPos(ImVec2(screenSize.x * 0.5f, 5.0f), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+
+    ImGui::SetNextWindowBgAlpha(0.65f);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 0.9f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
+
+    if (ImGui::Begin("EscHintOverlay", nullptr, hintFlags)) {
+
+        ImGui::SetWindowFontScale(1.3f);
+
+        if (isCursorMode) {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Press [ESC] to exit world edit mode");
+        }
+        else {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Press [ESC] to enter world edit mode");
+        }
+
     }
     ImGui::End();
 
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor();
+
+
+
+    //-----------------------CELOWNIK
+    if (config.isCrosshairEnabled && !isCursorMode) {
+        ImVec2 center = ImVec2(screenSize.x * 0.5f, screenSize.y * 0.5f);
+
+        ImDrawList* drawList = ImGui::GetForegroundDrawList();
+
+        float dotSize = 4.0f;
+        float gap = 2.0f;
+        ImU32 color = IM_COL32(30, 255, 30, 255);
+
+        drawList->AddRectFilled(ImVec2(center.x - gap - dotSize, center.y - dotSize * 0.5f), ImVec2(center.x - gap, center.y + dotSize * 0.5f), color);
+        drawList->AddRectFilled(ImVec2(center.x + gap, center.y - dotSize * 0.5f), ImVec2(center.x + gap + dotSize, center.y + dotSize * 0.5f), color);
+        drawList->AddRectFilled(ImVec2(center.x - dotSize * 0.5f, center.y - gap - dotSize), ImVec2(center.x + dotSize * 0.5f, center.y - gap), color);
+        drawList->AddRectFilled(ImVec2(center.x - dotSize * 0.5f, center.y + gap), ImVec2(center.x + dotSize * 0.5f, center.y + gap + dotSize), color);
+    }
+
+
+
+    //-----------------------GŁÓNE MENU
+    if (worldGenUI) {
+        worldGenUI->renderImGui(isCursorMode);
+    }
 }

@@ -7,14 +7,17 @@
 class WorldRenderer
 {
 private:
-	bool isColumnInRenderDistance(int columnX, int columnZ, int cameraColumnX, int cameraColumnZ) const;
-
-	void renderChunk(const Chunk* chunk, int columnX, int columnZ, int chunkY, Shader& shader) const;
+	std::vector<ChunkColumn*> visibleColumns;
 
 public:
 	WorldRenderer();
 	~WorldRenderer() = default;
 
+	bool isCameraUnderwater = false;
+	glm::vec3 underwaterColor = glm::vec3(0.0f);
+
 	void render(World& world, const Camera& camera, Shader& shader, float windowAspectRatio);
+
+	const std::vector<ChunkColumn*>& getVisibleColumns() const;
 };
 

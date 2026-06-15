@@ -2,9 +2,10 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <glm/glm.hpp>
 
 // WAŻNE!!!  ---   Definicja typu ID dla bloków używamy uint16_t co pozwala na maksymalnie 65536 różnych typów bloków
-using BlockID = uint16_t;
+using BlockID = uint8_t;
 
 //Struktura przechowująca dane o bloku
 struct BlockData
@@ -13,6 +14,7 @@ struct BlockData
 	std::string name;
 	bool isCollidable;
 	bool isTransparent;
+	glm::vec3 color;
 
 	//Można dodać więcej właściwości bloku w przyszłości, takich jak tekstura itp.
 };
@@ -28,8 +30,10 @@ public:
 	static void init();
 
 	// Funkcja rejestrująca nowy typ bloku i zwracająca jego ID.
-	static BlockID registerBlockData(const std::string& name, bool isCollidable, bool isTransparent);
+	static BlockID registerBlockData(const std::string& name, bool isCollidable, bool isTransparent, glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f));
 
 	//Funkcja zwracająca dane bloku na podstawie jego ID
 	static const BlockData& getBlockData(BlockID id);
+
+	static const std::vector<BlockData>& getAllBlocks();
 };

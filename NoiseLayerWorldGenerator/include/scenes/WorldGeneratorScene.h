@@ -3,19 +3,22 @@
 #include <iostream>
 #include "imgui.h"
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "BlockPlaceDestroy.h"
 #include "Shader.h"
 #include "Mesh.h"
 #include "Camera.h"
 #include "Input.h"
 #include "world/World.h"
 #include "world/WorldRenderer.h"
+#include "world/DebugRenderer.h"
+#include "world/WorldTerrainGenerator.h"
 #include "managers/WindowManager.h"
+#include "gui/WorldGeneratorUI.h"
 
 class WorldGeneratorScene : public Scene
 {
 public:
-	WorldGeneratorScene() = default;
+	WorldGeneratorScene(std::vector<TerrainLayer> initialLayers = {});
 	~WorldGeneratorScene() override = default;
 
 	void onEnter() override;
@@ -26,13 +29,22 @@ public:
 	void onImGuiRender() override;
 
 private:
-	std::unique_ptr<Camera> camera;
+	std::vector<TerrainLayer> presetLayers;
 
-	//TYMCZASOWO - test ładowania shaderów
+	std::unique_ptr<Camera> camera;
+	//Flaga która sprawdza czy sterujemy myszą lub kamerą
+	bool isCursorMode = false;
+
 	std::unique_ptr<Shader> mainShader;
 
 	std::unique_ptr<World> world;
+	std::unique_ptr<WorldTerrainGenerator> worldTerrainGenerator;
 	std::unique_ptr<WorldRenderer> worldRenderer;
-	//---
+	std::unique_ptr<Raycast> raycast;
+	std::unique_ptr<BlockPlaceDestroy> blockPlaceDestroy;
+	std::unique_ptr<WorldGeneratorUI> worldGenUI;
+	std::unique_ptr<DebugRenderer> debugRenderer;
+
+	std::unique_ptr<ChunkColumn> chunkColumn;
 };
 

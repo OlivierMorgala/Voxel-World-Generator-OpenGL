@@ -2,11 +2,12 @@
 
 WorldRenderer::WorldRenderer()
 {
-
+	visibleColumns.reserve(3000);
 }
 
 void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, float windowAspectRatio)
 {
+
 	shader.useShader();
 
 	shader.setMatrix4("view", camera.getViewMatrix());
@@ -15,47 +16,94 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 	int cameraColumnX = static_cast<int>(std::floor(camera.position.x / (Chunk::CHUNK_SIZE)));
 	int cameraColumnZ = static_cast<int>(std::floor(camera.position.z / (Chunk::CHUNK_SIZE)));
 
-	for (int x = -config.renderDistance; x <= config.renderDistance; x++) {
-		for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
-			
-			int columnX = cameraColumnX + x;
-			int columnZ = cameraColumnZ + z;
+	isCameraUnderwater = false;
+	underwaterColor = glm::vec3(0.0f);
 
-			ChunkColumn* column = world.getChunkColumn(columnX, columnZ);
+	int cameraBlockX = static_cast<int>(std::floor(camera.position.x));
+	int cameraBlockY = static_cast<int>(std::floor(camera.position.y));
+	int cameraBlockZ = static_cast<int>(std::floor(camera.position.z));
 
-			if (column && column->hasMesh())
-			{
-				for (int y = 0; y < config.worldHeightInChunks; y++) {
-					Chunk* chunk = column->getChunk(y);
+	ChunkColumn* cameraColumn = world.getChunkColumn(cameraColumnX, cameraColumnZ);
+	if (cameraColumn) {
+		int localX = cameraBlockX % Chunk::CHUNK_SIZE;
+		if(localX < 0) { localX += Chunk::CHUNK_SIZE; }
+		int localZ = cameraBlockZ % Chunk::CHUNK_SIZE;
+		if (localZ < 0) { localZ += Chunk::CHUNK_SIZE; }
 
-					if (chunk && chunk->hasMesh()) {
-						renderChunk(chunk, column->getX(), column->getZ(), y, shader);
-					}
-				}
-			}
+		BlockID currentBlockID = cameraColumn->getBlock(localX, cameraBlockY, localZ);
 
+		if(currentBlockID != 0 && BlockDatabase::getBlockData(currentBlockID).isTransparent){
+			isCameraUnderwater = true;
+			underwaterColor = BlockDatabase::getBlockData(currentBlockID).color;
 		}
 	}
-	
-}
 
-bool WorldRenderer::isColumnInRenderDistance(int columnX, int columnZ, int cameraColumnX, int cameraColumnZ) const
-{
-	
-	if (std::abs(columnX - cameraColumnX) <= config.renderDistance &&
-		std::abs(columnZ - cameraColumnZ) <= config.renderDistance) 
-	{
-		return true;
+	shader.setValue("alpha", 1.0f);
+	shader.setValue("isBorderRendered", true);
+	shader.setValue("showColumnBorders", config.showChunkColumnsBorder);
+	shader.setValue("chunkSize", static_cast<float>(Chunk::CHUNK_SIZE));
+	glEnable(GL_CULL_FACE);
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+
+	visibleColumns.clear();
+
+	Frustum frustumCamera;
+	if (config.isFrustumCullingEnabled) {
+		frustumCamera = camera.getFrustum(windowAspectRatio);
 	}
 
-	return false;
+	std::vector<ChunkColumn*> loadedColumns = world.getLoadedColumns();
+
+	for (ChunkColumn* column : loadedColumns) {
+
+		int dx = column->getX() - cameraColumnX;
+		int dz = column->getZ() - cameraColumnZ;
+
+		if (std::abs(dx) <= config.renderDistance && std::abs(dz) <= config.renderDistance) {
+			if (column->hasMesh()) {
+				bool isVisible = true;
+
+				if (config.isFrustumCullingEnabled) {
+					AA_BoundingBox AABBcolumn;
+
+					AABBcolumn.min.x = column->getX() * Chunk::CHUNK_SIZE;
+					AABBcolumn.min.y = 0.0f;
+					AABBcolumn.min.z = column->getZ() * Chunk::CHUNK_SIZE;
+
+					AABBcolumn.max.x = AABBcolumn.min.x + Chunk::CHUNK_SIZE;
+					AABBcolumn.max.y = config.worldHeightInChunks * Chunk::CHUNK_SIZE;
+					AABBcolumn.max.z = AABBcolumn.min.z + Chunk::CHUNK_SIZE;
+
+					isVisible = camera.isAABoundingBoxVisible(frustumCamera, AABBcolumn);
+
+				}
+
+				if (isVisible) {
+					column->renderOpaque(&shader);
+					visibleColumns.push_back(column);
+				}
+			}
+		}
+	}
+
+	shader.setValue("alpha", 0.65f);
+	shader.setValue("isBorderRendered", false);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_CULL_FACE);
+
+	for (ChunkColumn* column : visibleColumns) {
+		column->renderTransparent(&shader);
+	}
+
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
 }
 
-void WorldRenderer::renderChunk(const Chunk* chunk, int columnX, int columnZ, int chunkY, Shader& shader) const
+const std::vector<ChunkColumn*>& WorldRenderer::getVisibleColumns() const 
 {
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(columnX * Chunk::CHUNK_SIZE, chunkY * Chunk::CHUNK_SIZE, columnZ * Chunk::CHUNK_SIZE));
-	shader.setMatrix4("model", model);
-
-	chunk->render();
+	return visibleColumns;
 }

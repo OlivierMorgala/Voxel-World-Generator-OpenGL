@@ -1,46 +1,203 @@
-#include "world\World.h"
+#include "world/World.h"
 
 World::World() {
+	unsigned int threadCount = std::thread::hardware_concurrency();
 
+	if(threadCount == 0) {
+		threadCount = 1;
+	}
+
+	unsigned int workerThreadCount = 1;
+	if (threadCount > 1) {
+		workerThreadCount = threadCount - 1;
+	}
+
+	for (unsigned int i = 0; i < workerThreadCount; i++) {
+		workerThreads.emplace_back([this]() {
+			while (true) {
+				std::function<void()> task;
+				{
+					std::unique_lock<std::mutex> tasksQueueLock(tasksQueueMutex);
+					this->condition.wait(tasksQueueLock, [this]() { 
+						return this->stopPool || !this->tasksQueue.empty();
+					});
+
+					if (this->stopPool && this->tasksQueue.empty()) {
+						return;
+					}
+
+					task = std::move(this->tasksQueue.front());
+					this->tasksQueue.pop();
+				}
+				task();
+			}
+		});
+	}
 }
 
-void World::addChunkColumn(int x, int z) 
-{
-	ChunkCords position = { x, z };
 
-	std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
+
+World::~World()
+{
+	isGenerating = false;
+
+	{
+		std::unique_lock<std::mutex> tasksQueueLock(tasksQueueMutex);
+		stopPool = true;
+	}
+	condition.notify_all();
+
+	for (std::thread& worker : workerThreads) {
+		if (worker.joinable()) {
+			worker.join();
+		}
+	}
+
+	if (generationThread.joinable()) {
+		generationThread.join();
+	}
+
+	while (pendingTasks > 0) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+}
+
+
+
+void World::enqueueTask(std::function<void()> task)
+{
+	pendingTasks++;
+
+	{
+		std::lock_guard<std::mutex> tasksQueueLock(tasksQueueMutex);
+		tasksQueue.push([this, task]() {
+			try {
+				task();
+			}catch (const std::exception& e) {
+				std::cerr << "[ERROR:WORLD::THREAD] Zadanie przerwane: " << e.what() << std::endl;
+			}
+			pendingTasks--;
+		});
+	}
+
+	condition.notify_one();
+}
+
+
+
+void World::setCamera(const Camera* camera)
+{
+	targetCamera = camera;
+}
+
+
+
+
+void World::setTerrainGenerator(WorldTerrainGenerator* generator) {
+	terrainGenerator = generator;
+}
+
+
+
+WorldState World::getCurrentState() const {
+	return currentState;
+}
+
+
+
+float World::getGenerationProgress() const {
+	if (totalChunksToGenerate == 0) {
+		return 0.0f;
+	}
+
+	float totalTasks = static_cast<float>(totalChunksToGenerate * 2);
+	float completedTasks = static_cast<float>(generatedChunksCount.load() + uploadedChunksCount.load());
+
+	return completedTasks / totalTasks;
+}
+
+
+
+void World::getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ, int& localX, int& localZ) const
+{
+	columnX = globalX >> 4;
+	columnZ = globalZ >> 4;
+	localX = globalX & 15;
+	localZ = globalZ & 15;
+}
+
+
+
+int World::getLoadedChunkColumnsCount()
+{
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+	return columnsMap.size();
+}
+
+
+
+void World::addChunkColumn(int x, int z)
+{
+	//std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
+
+	ChunkCords position = { x, z };
 	auto column = std::make_unique<ChunkColumn>(x, z);
 
-   //-----------------------TYMCZASOWO------------------------------------
-	for (int lx = 0; lx < Chunk::CHUNK_SIZE; lx++) {
-		for (int lz = 0; lz < Chunk::CHUNK_SIZE; lz++) {
-			for (int y = 0; y < 10; y++) { // Wszystko do Y=10 to bloki
-				column->setBlock(lx, y, lz, 1); // 1 = Kamień/Ziemia
-			}
-		}
+	if (terrainGenerator) {
+		terrainGenerator->applyToColumn(*column);
 	}
-	//---------------------------------------------------------------------
 
 	ChunkColumn* columnPtr = column.get();
-	columnsMap[position] = std::move(column);
 
-	columnPtr->generateMeshes(this);
+	{
+		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+		columnsMap[position] = std::move(column);
+	}
 
-	int xShift[] = { 1, -1, 0, 0 };
-	int zShift[] = { 0, 0, 1, -1 };
+	enqueueTask([this, columnPtr]() {
+		{
+			std::lock_guard<std::mutex> meshLock(columnPtr->getMeshMutex());
+			columnPtr->buildMeshFromPendingData(*this);
+		}
 
+		bool expected = false;
+		if (columnPtr->isMeshUploadPending.compare_exchange_strong(expected, true)) {
+			std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+			uploadToGPUQueue.push_back(columnPtr);
+		}
+	});
+
+	constexpr int neighborShiftX[] = { 1, -1, 0, 0 };
+	constexpr int neighborShiftZ[] = { 0, 0, 1, -1 };
+	
 	for (int i = 0; i < 4; i++) {
-		ChunkColumn* neighbor = getChunkColumn(x + xShift[i], z + zShift[i]);
-		if (neighbor) {
-			neighbor->generateMeshes(this);
+		ChunkColumn* neighborColumn = getChunkColumn(x + neighborShiftX[i], z + neighborShiftZ[i]);
+
+		if (neighborColumn) {
+			enqueueTask([this, neighborColumn]() {
+				{
+					std::lock_guard<std::mutex> neighborMeshLock(neighborColumn->getMeshMutex());
+					neighborColumn->buildMeshFromPendingData(*this);
+				}
+
+				bool expected = false;
+				if (neighborColumn->isMeshUploadPending.compare_exchange_strong(expected, true)) {
+					std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+					uploadToGPUQueue.push_back(neighborColumn);
+				}
+			});
 		}
 	}
+	
 }
 
-ChunkColumn* World::getChunkColumn(int x, int z) const 
+
+
+ChunkColumn* World::getChunkColumn(int x, int z) const
 {
-	ChunkCords position = { x, z };
-	auto it = columnsMap.find(position);
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+
+	auto it = columnsMap.find({x, z});
 
 	if (it != columnsMap.end()) {
 		return it->second.get();
@@ -49,85 +206,352 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 	return nullptr;
 }
 
-const std::map<ChunkCords, std::unique_ptr<ChunkColumn>>& World::getColumnsMap() const 
+
+
+std::vector<ChunkColumn*> World::getLoadedColumns() const 
 {
-	return columnsMap;
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+
+	std::vector<ChunkColumn*> activeColumns;
+	activeColumns.reserve(columnsMap.size());
+
+	for (const auto& [coords, column] : columnsMap) {
+		activeColumns.push_back(column.get());
+	}
+
+	return activeColumns;
 }
+
+
 
 void World::setBlock(int x, int y, int z, BlockID blockID)
 {
 
-	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) {
+	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) 
+	{
 		return;
 	}
 
-	int columnX = x / Chunk::CHUNK_SIZE;
-	int columnZ = z / Chunk::CHUNK_SIZE;
+	int columnX;
+	int columnZ;
+	int localX;
+	int localZ;
 
-	ChunkColumn* column = getChunkColumn(columnX, columnZ);
+	getLocalCoords(x, z, columnX, columnZ, localX, localZ);
 
-	if (column) {
-		int localX = x % Chunk::CHUNK_SIZE;
-		int localZ = z % Chunk::CHUNK_SIZE;
-
-		if (localX < 0) { localX += Chunk::CHUNK_SIZE; }
-		if (localZ < 0) { localZ += Chunk::CHUNK_SIZE; }
-
+	if (auto column = getChunkColumn(columnX, columnZ))
+	{
 		column->setBlock(localX, y, localZ, blockID);
 	}
 }
 
-BlockID World::getBlock(int x, int y, int z) const 
+void World::renderAlteredChunks(ChunkColumn* column) // METODA ODPOWIADA ZA PONOWNE RENDEROWANIE CHUNKOW KTORE ZOSTALY ZMIENIONE PRZEZ UZYTKOWNIKA -> CZYLI TAKIE NA KTORYM ZNISZCZONO LUB POSTAWIONO BLOK
+{
+	enqueueTask([this, column]() {
+		{
+			std::lock_guard<std::mutex> meshLock(column->getMeshMutex());
+			column->buildMeshFromPendingData(*this);
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(uploadQueueMutex);
+			uploadToGPUQueue.push_back(column);
+		}
+
+		});
+}
+
+
+
+BlockID World::getBlock(int x, int y, int z) const
 {
 	if (y < 0 || y >= config.worldHeightInChunks * Chunk::CHUNK_SIZE) {
 		return 0;
 	}
-	
-	int columnX = x / Chunk::CHUNK_SIZE;
-	int columnZ = z / Chunk::CHUNK_SIZE;
 
-	ChunkColumn* column = getChunkColumn(columnX, columnZ);
+	int columnX;
+	int columnZ;
+	int localX;
+	int localZ;
 
-	if (column) {
-		int localX = x % Chunk::CHUNK_SIZE;
-		int localZ = z % Chunk::CHUNK_SIZE;
+	getLocalCoords(x, z, columnX, columnZ, localX, localZ);
 
-		if (localX < 0) { localX += Chunk::CHUNK_SIZE; }
-		if (localZ < 0) { localZ += Chunk::CHUNK_SIZE; }
-
+	if (auto column = getChunkColumn(columnX, columnZ)) {
 		return column->getBlock(localX, y, localZ);
 	}
 
 	return 0;
 }
 
-void World::generateWorldMesh() 
-{
-	for(auto const& it : columnsMap) {
-		it.second->generateMeshes(this);
-	}	
-}
 
-void World::render(Shader* shader) const 
+
+void World::generateWorldMesh()
 {
-	for (auto const& it : columnsMap) {
-		it.second->render(shader);
+	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+
+	for (auto const& [position, column] : columnsMap) {
+		column->buildMeshFromPendingData(*this);
+		column->uploadMeshToGPU();
 	}
 }
 
-void World::updateWorld(glm::vec3 cameraPosition)
+
+
+
+void World::updateWorld()
 {
-	int cameraColumnX = static_cast<int>(std::floor(cameraPosition.x / (Chunk::CHUNK_SIZE)));
-	int cameraColumnZ = static_cast<int>(std::floor(cameraPosition.z / (Chunk::CHUNK_SIZE)));
+	std::vector<ChunkColumn*> chunksToUploadThisFrame;
+	bool isQueueEmpty = true;
 
-	for (int x = -config.renderDistance; x <= config.renderDistance; x++) {
-		for (int z = -config.renderDistance; z <= config.renderDistance; z++) {
+	{
+		std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+		int chunksProcessedThisFrame = 0;
 
-			ChunkCords coords = { cameraColumnX + x, cameraColumnZ + z };
+		while (!uploadToGPUQueue.empty() && chunksProcessedThisFrame < MAX_CHUNKS_UPLOADED_PER_FRAME) {
+			ChunkColumn* column = uploadToGPUQueue.front();
+			uploadToGPUQueue.pop_front();
+			column->isMeshUploadPending = false;
 
-			if (columnsMap.find(coords) == columnsMap.end()) {
-				addChunkColumn(coords.x, coords.z);
-			}
+			chunksToUploadThisFrame.push_back(column);
+			chunksProcessedThisFrame++;
+			uploadedChunksCount++;
 		}
 	}
+
+	for (ChunkColumn* column : chunksToUploadThisFrame) {
+		column->uploadMeshToGPU();
+	}
+
+	if (currentState == WorldState::LOADING && uploadedChunksCount >= totalChunksToGenerate && isQueueEmpty) {
+		currentState = WorldState::PLAYING;
+		std::cout << "+[WORLD] Zakonczono generowanie swiata!" << std::endl;
+	}
+
+	if (currentState == WorldState::PLAYING) {
+
+		if(!targetCamera) { return; }
+		int cameraColumnX = static_cast<int>(std::floor(targetCamera->position.x / Chunk::CHUNK_SIZE));
+		int cameraColumnZ = static_cast<int>(std::floor(targetCamera->position.z / Chunk::CHUNK_SIZE));
+
+		int chunksQueuedThisFrame = 0;
+		std::vector<ChunkCords> chunksToGenerateThisFrame;
+
+		{
+			std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+			std::lock_guard<std::mutex> generationSetLock(generationSetMutex);
+
+			for (int d = 0; d <= config.renderDistance + 1; d++) {
+				for(int x = -d; x <= d; x++) {
+					for(int z = -d; z <= d; z++) {
+
+						if(std::abs(x) != d && std::abs(z) != d) {
+							continue;
+						}
+
+						ChunkCords coords = { cameraColumnX + x, cameraColumnZ + z };
+
+						if (columnsMap.find(coords) != columnsMap.end()) {
+							continue;
+						}
+
+						if (columnsCurrentlyGenerating.find(coords) == columnsCurrentlyGenerating.end()) {
+							chunksToGenerateThisFrame.push_back(coords);
+							columnsCurrentlyGenerating.insert(coords);
+							chunksQueuedThisFrame++;
+
+							if (chunksQueuedThisFrame >= MAX_CHUNKS_GENERATED_PER_FRAME) {
+								break;
+							}
+						}
+
+					}
+					if (chunksQueuedThisFrame >= MAX_CHUNKS_GENERATED_PER_FRAME) { break; }
+				}
+				if (chunksQueuedThisFrame >= MAX_CHUNKS_GENERATED_PER_FRAME) { break; }
+			}
+		}
+
+		for (const auto& coords : chunksToGenerateThisFrame) {
+			//std::cout << "+[WORLD] Dodano kolumne do generowania: " << coords.x << ", " << coords.z << std::endl;
+
+			
+			enqueueTask([this, coords]() {
+				if(!isGenerating) { return; }
+				addChunkColumn(coords.x, coords.z);
+
+				std::lock_guard<std::mutex> generationSetLock(generationSetMutex);
+				columnsCurrentlyGenerating.erase(coords);
+				});
+		}
+
+
+		int unloadDistance = config.renderDistance + 2;
+		std::vector<ChunkCords> chunksToUnload;
+		{
+			std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+			for(const auto& [coords, column] : columnsMap) {
+				if(std::abs(coords.x - cameraColumnX) > unloadDistance || std::abs(coords.z - cameraColumnZ) > unloadDistance) {
+					chunksToUnload.push_back(coords);
+				}
+			}
+		}
+
+		if (!chunksToUnload.empty()) {
+			std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+			std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+
+			for (const auto& coords : chunksToUnload) {
+				ChunkColumn* columnPtr = columnsMap[coords].get();
+
+				auto it = std::find(uploadToGPUQueue.begin(), uploadToGPUQueue.end(), columnPtr);
+				if (it != uploadToGPUQueue.end()) {
+					uploadToGPUQueue.erase(it);
+				}
+				columnsMap.erase(coords);
+			}
+		}
+
+
+	}
+}
+
+
+
+void World::regenerateWorld()
+{
+	isGenerating = false;
+	if (generationThread.joinable()) {
+		generationThread.join();
+	}
+
+	while (pendingTasks > 0) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+
+
+	if (terrainGenerator && !terrainGenerator->generationLayers.empty()) {
+		int maxAlgorithmHeight = 0;
+
+		for (const TerrainLayer& layer : terrainGenerator->generationLayers) {
+			if (layer.endY > maxAlgorithmHeight) {
+				maxAlgorithmHeight = layer.endY;
+			}
+
+			if (layer.algorithm) {
+				layer.algorithm->setSeed(config.worldSeed);
+			}
+		}
+
+		int optimalHeightInChunks = (maxAlgorithmHeight / Chunk::CHUNK_SIZE) + 1;
+
+		if (optimalHeightInChunks < 1) { optimalHeightInChunks = 2; }
+
+		config.worldHeightInChunks = optimalHeightInChunks;
+		std::cout << "+[WORLD] Optymalna wysokosc: " << config.worldHeightInChunks << "\n";
+	}
+
+
+	{
+		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+		std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
+		std::lock_guard<std::mutex> generationSetLock(generationSetMutex);
+		columnsMap.clear();
+		uploadToGPUQueue.clear();
+		columnsCurrentlyGenerating.clear();
+	}
+
+	int camColX = 0;
+	int camColZ = 0;
+	if (targetCamera) {
+		camColX = static_cast<int>(std::floor(targetCamera->position.x / Chunk::CHUNK_SIZE));
+		camColZ = static_cast<int>(std::floor(targetCamera->position.z / Chunk::CHUNK_SIZE));
+	}
+
+	int meshRadius = config.renderDistance;
+	int dataRadius = config.renderDistance + 1;
+
+	totalChunksToGenerate = ((meshRadius * 2) + 1) * ((meshRadius * 2) + 1);
+	generatedChunksCount = 0;
+	uploadedChunksCount = 0;
+	currentState = WorldState::LOADING;
+	isGenerating = true;
+
+	generationThread = std::thread([this, camColX, camColZ, dataRadius, meshRadius]() {
+
+		std::vector<std::future<void>> localFutures;
+
+		unsigned int availableThreads = std::thread::hardware_concurrency();
+		if (availableThreads == 0) {
+			availableThreads = 4;
+		}
+
+		unsigned int workerThreadsCount = 1;
+		if (availableThreads > 1) {
+			workerThreadsCount = availableThreads - 1;
+		}
+
+		for (unsigned int t = 0; t < workerThreadsCount; t++) {
+			enqueueTask([this, t, workerThreadsCount, camColX, camColZ, dataRadius]() {
+
+					for (int x = -dataRadius + t; x <= dataRadius; x += workerThreadsCount) {
+						for (int z = -dataRadius; z <= dataRadius; z++) {
+
+							if (!isGenerating) { return; }
+
+							ChunkCords coords = {camColX + x, camColZ + z};
+							auto column = std::make_unique<ChunkColumn>(coords.x, coords.z);
+
+							if (terrainGenerator) {
+								terrainGenerator->applyToColumn(*column);
+							}
+
+							{
+								std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+								columnsMap[coords] = std::move(column);
+							}
+						}
+
+					}
+				});
+		}
+
+		while (pendingTasks > 0) {
+			if (!isGenerating) { return; }
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		}
+
+		for (unsigned int t = 0; t < workerThreadsCount; t++) {
+			enqueueTask([this, t, workerThreadsCount, camColX, camColZ, meshRadius]() {
+
+					for (int x = -meshRadius + t; x <= meshRadius; x += workerThreadsCount) {
+						for (int z = -meshRadius; z <= meshRadius; z++) {
+
+							if (!isGenerating) { return; }
+
+							ChunkCords coords = { camColX + x, camColZ + z };
+							ChunkColumn* colPtr = getChunkColumn(coords.x, coords.z);
+
+							if (colPtr) {
+								{
+									std::lock_guard<std::mutex> meshLock(colPtr->getMeshMutex());
+									colPtr->buildMeshFromPendingData(*this);
+								}
+
+								bool expected = false;
+								if(colPtr->isMeshUploadPending.compare_exchange_strong(expected, true)) {
+									std::lock_guard<std::mutex> lock(uploadQueueMutex);
+									uploadToGPUQueue.push_back(colPtr);
+								}
+
+								generatedChunksCount++;
+							}
+						}
+					}
+
+			});
+		}
+	});
+
+	std::cout << "+[WORLD] Pomyslnie utworzono wszystkie watki" << std::endl;
 }

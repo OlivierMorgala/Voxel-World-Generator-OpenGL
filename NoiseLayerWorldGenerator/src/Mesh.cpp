@@ -1,13 +1,16 @@
 #include "Mesh.h"
 
-Mesh::Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices)
+Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) :
+	VAO(0),
+	VBO(0),
+	EBO(0)
 {
-	// Obliczanie liczby wierzchołków na podstawie rozmiaru wektora wierzchołków. Zakładamy że każdy wierzchołek składa się z 3 wartości (x, y, z)
-	vertexCount = static_cast<int>(vertices.size() / 3);
 	// Obliczanie liczby indeksów na podstawie rozmiaru wektora indeksów
 	indexCount = static_cast<int>(indices.size());
+	// Obliczanie liczby wierzchołków na podstawie rozmiaru wektora wierzchołków
+	vertexCount = static_cast<int>(vertices.size());
 
-	//Zarezerwowanie pamięci GPU dla VAO i VBO które będą przechowywać dane wierzchołków i konfigurację atrybutów wierzchołków
+	//Zarezerwowanie pamięci GPU dla VAO, VBO które będą przechowywać dane wierzchołków i konfigurację atrybutów wierzchołków
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
@@ -16,43 +19,48 @@ Mesh::Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& 
 
 	//Przesłanie danych wierzchołków z CPU do GPU poprzez wiązanie VBO i kopiowanie danych wierzchołków do tego bufora, co umożliwia GPU dostęp do tych danych podczas renderowania
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
 
-	// Jeśli używamy indeksowania wierzchołków to przesyłamy dane indeksów do GPU poprzez wiązanie EBO i kopiowanie danych indeksów do tego bufora, co umożliwia GPU dostęp do tych danych podczas renderowania z użyciem indeksów
+	//Jeśli mamy indeksy, to tworzymy i konfigurujemy EBO (Element Buffer Object) który przechowuje dane indeksów używane do renderowania
 	if (indexCount > 0) {
-		//Zarezerwowanie pamięci GPU dla EBO który będzie przechowywał dane indeksów jeśli używamy indeksowania wierzchołków
 		glGenBuffers(1, &EBO);
-
-		//Przesłanie danych indeksów z CPU do GPU poprzez wiązanie EBO i kopiowanie danych indeksów do tego bufora, co umożliwia GPU dostęp do tych danych podczas renderowania z użyciem indeksów
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-	}
-	else {
-		// Jeśli nie używamy indeksowania wierzchołków to ustawiamy EBO na 0 co oznacza że nie będzie używany podczas renderowania
-		EBO = 0;
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
 	}
 
-	//Informowanie OpenGL o formacie danych wierzchołków poprzez ustawienie atrybutów wierzchołków. W tym przypadku zakładamy że każdy wierzchołek składa się z 3 wartości typu float (x, y, z) i że dane są ułożone bezpośrednio po sobie w buforze
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	setupAttributes();
 
-	//Odpinanie VAO i VBO po zakończeniu konfiguracji
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// Odpinanie VAO i VBO po zakończeniu konfiguracji aby zapobiec przypadkowemu modyfikowaniu ich konfiguracji
 	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Mesh::setupAttributes()
+{
+	//Konfiguracja atrybutów wierzchołków co pozwala GPU zrozumieć jak interpretować dane wierzchołków przechowywane w VBO.
+	//Każdy atrybut wierzchołka jest konfigurowany z odpowiednim indeksem, rozmiarem, typem danych, i przesunięciem w strukturze Vertex
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, localPosition));
 }
 
 Mesh::~Mesh()
 {
 	// Zwalnianie zasobów GPU związanych z VAO, VBO i EBO aby uniknąć wycieków pamięci GPU
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	if (EBO != 0) {
-		glDeleteBuffers(1, &EBO);
-	}
+	if (VAO != 0) { glDeleteVertexArrays(1, &VAO); }
+	if (VBO != 0) { glDeleteBuffers(1, &VBO); }
+	if (EBO != 0) { glDeleteBuffers(1, &EBO); }
 }
 
 void Mesh::draw() const
 {
+	if (indexCount == 0 && vertexCount == 0) { return; }
+
 	// Renderowanie siatki poprzez wiązanie VAO i wywołanie funkcji rysującej która wykorzystuje liczbę wierzchołków do określenia ile wierzchołków ma zostać narysowanych
 	glBindVertexArray(VAO);
 
@@ -67,4 +75,29 @@ void Mesh::draw() const
 
 	// Odpinanie VAO po zakończeniu renderowania
 	glBindVertexArray(0);
+}
+
+void Mesh::updateData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
+
+	indexCount = static_cast<int>(indices.size());
+	vertexCount = static_cast<int>(vertices.size());
+
+	if (vertexCount == 0) return;
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_DYNAMIC_DRAW);
+
+	if (indexCount > 0) {
+		if (EBO == 0) {
+			glGenBuffers(1, &EBO);
+		}
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+	}
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
