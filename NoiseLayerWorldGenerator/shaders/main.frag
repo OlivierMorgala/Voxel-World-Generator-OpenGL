@@ -3,10 +3,16 @@ out vec4 FragColor;
 
 in vec3 ourColor;  // Kolor odebrany z vertex shadera
 in vec2 texCoord;  // Współrzędne ściany (0.0 - 1.0)
+in vec3 FragPosition;
 
 uniform float alpha;
 uniform bool isBorderRendered;
 uniform bool isUnderwater;
+
+
+/// RAYCAST
+uniform vec3 blockHitPosition;
+uniform float BlockHasHit; // 1 - trafiono blok 2 - nie trafiono bloku
 
 void main()
 {
@@ -17,10 +23,28 @@ void main()
     bool isBorder = (texCoord.x < thickness || texCoord.x > 1.0 - thickness || 
                      texCoord.y < thickness || texCoord.y > 1.0 - thickness);
 
+// Obliczamy, czy ten piksel należy do bloku, który aktualnie trafiamy raycastem
+   float errorMargin = 0.001;
+        bool equalBlocksPosition = (
+            FragPosition.x >= blockHitPosition.x - errorMargin && FragPosition.x <= blockHitPosition.x + 1.0 + errorMargin &&
+            FragPosition.y >= blockHitPosition.y - errorMargin && FragPosition.y <= blockHitPosition.y + 1.0 + errorMargin &&
+            FragPosition.z >= blockHitPosition.z - errorMargin && FragPosition.z <= blockHitPosition.z + 1.0 + errorMargin
+        );
+     
     vec4 finalColor;
+
     if (isBorder && isBorderRendered) {
-        // Rysujemy czarną ramkę
-        finalColor = vec4(0.0, 0.0, 0.0, alpha);
+
+        // Rysujemy czarną ramkę albo jezeli raycast trafi to podswietlamy ramke bloku
+        if(BlockHasHit == 1.0 && equalBlocksPosition)
+        {
+          finalColor = vec4(ourColor + 0.3f, alpha);
+         }
+         else
+         {
+         finalColor = vec4(0.0, 0.0, 0.0, alpha);
+         }
+
     } else {
         // Rysujemy właściwy kolor bloku
         finalColor = vec4(ourColor, alpha);

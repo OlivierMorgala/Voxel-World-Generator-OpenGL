@@ -20,8 +20,8 @@
 
 #include "WorldConfig.h"
 
-constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 1;
-constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 6;
+constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 2;
+constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 8;
 
 enum class WorldState {
 	PLAYING,

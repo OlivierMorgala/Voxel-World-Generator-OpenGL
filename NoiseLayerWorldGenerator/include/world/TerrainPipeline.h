@@ -12,7 +12,8 @@ enum class BlendMode {
 	MAX,
 	MIN,
 	SMOOTH,
-	ABSOLUTE
+	ABSOLUTE,
+	CARVE
 };
 
 class TerrainModifier
@@ -29,6 +30,8 @@ public:
 	virtual ~TerrainAlgorithm() = default;
 
 	virtual float evaluate(float x, float z) = 0;
+	virtual float evaluate3D(float x, float y, float z) { return 0.0f; };
+
 	virtual void renderImGui() = 0;
 	virtual void setSeed(int newSeed) = 0;
 };

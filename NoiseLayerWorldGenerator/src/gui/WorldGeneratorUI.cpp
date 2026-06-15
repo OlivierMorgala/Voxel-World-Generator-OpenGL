@@ -1,7 +1,9 @@
 #include "gui/WorldGeneratorUI.h"
 #include "world/generationAlgorithms/TerrainModifiers.h"
 #include "world/generationAlgorithms/PerlinNoise2D.h"
+#include "world/generationAlgorithms/PerlinNoise3D.h"
 #include "world/generationAlgorithms/FlatFill.h"
+#include "world/generationAlgorithms/SimplexNoise.h"
 #include <world/WorldConfig.h>
 #include <world/World.h>
 #include <managers/SceneManager.h>
@@ -141,7 +143,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 				static float newBlockColor[3] = { 0.5f, 0.5f, 0.5f };
 
                 ImGui::InputText("Nazwa", nameBuf, 64);
-                ImGui::Combo("Algorytm", &layerType, "Perlin Noise\0Flat Fill\0");
+                ImGui::Combo("Algorytm", &layerType, "Flat Fill\0Perlin Noise\0Perlin Noise 3D\0Simplex Noise\0");
                 
                 if (ImGui::InputInt("Start Y", &start_y)) {
                     if (start_y < 0) { start_y = 0; }
@@ -245,10 +247,16 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                 if (ImGui::Button("ADD", ImVec2(120, 0))) {
                     if (layerType == 0) {
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<FlatFill>()));
+                    }
+                    else if(layerType == 1){
                         layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<PerlinNoise2D>(config.worldSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
                     }
-                    else if (layerType == 1) {
-                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<FlatFill>()));
+                    else if (layerType == 2) {
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<PerlinNoise3D>(config.worldSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
+                    }
+                    else if(layerType == 3){
+                        layers.push_back(TerrainLayer(nameBuf, start_y, end_y, currentBlockIndex, std::make_unique<SimplexNoise>(config.worldSeed, 0.05f, 1.0f, 4, 2.0f, 0.5f)));
                     }
                     ImGui::CloseCurrentPopup();
                 }
@@ -384,10 +392,10 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                 ImGui::Spacing();
                 
-                const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE"};
+                const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE", "CARVE"};
                 ImGui::Combo("Blending Mode", (int*)&currentLayer.blendMode, blendNames, IM_ARRAYSIZE(blendNames));
 
-                if (currentLayer.blendMode == BlendMode::SMOOTH) {
+                if (currentLayer.blendMode == BlendMode::SMOOTH || currentLayer.blendMode == BlendMode::CARVE) {
                     ImGui::SliderFloat("Blending Weight", &currentLayer.blendWeight, 0.0f, 1.0f);
                 }
 
