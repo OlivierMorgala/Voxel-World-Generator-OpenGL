@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+// Konstruktor inicjalizuje podstawowe parametry camery
 Camera::Camera(glm::vec3 startPosition) :
 	position(startPosition),
 	front(glm::vec3(0.0f, 0.0f, -1.0f)),
@@ -9,22 +10,25 @@ Camera::Camera(glm::vec3 startPosition) :
 	updateCameraVectors();
 }
 
+// Metoda getViewMatrix: Metoda zwraca macierz widoku
 glm::mat4 Camera::getViewMatrix() const
 {
 	return glm::lookAt(position, position + front, up);
 }
 
+// Metoda getProjectionMatrix: Metoda zwraca macierz projekcji okreslajaca fov, proporcje oraz zasieg renderowania
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
 	return glm::perspective(glm::radians(config.fov), aspectRatio, config.viewBegin, config.viewDistance);
 }
 
+// Metoda procesKeyboardInput: Metoda obsluguje ruch kamery przy pomocy klawiatury
 void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 {
-	// Prędkość ruchu jest skalowana przez deltaTime, aby zapewnić płynny ruch niezależnie od liczby klatek na sekundę
+	// Predkosc ruchu jest skalowana przez deltaTime, aby zapewnic plynny ruch niezaleznie od liczby klatek na sekunde
 	float velocity = config.cameraSpeed * deltaTime;
 
-	// Aktualizujemy pozycję kamery na podstawie kierunku ruchu
+	// Aktualizujemy pozycje kamery na podstawie kierunku ruchu
 	if (direction == FORWARD)  position += front * velocity;
 	if (direction == BACKWARD) position -= front * velocity;
 	if (direction == LEFT)     position -= right * velocity;
@@ -33,6 +37,7 @@ void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 	if (direction == DOWN)     position -= worldUp * velocity;
 }
 
+// Metoda processMouseMovement: Metoda odpowiada za obsluge obracania kamery za pomoca myszy
 void Camera::processMouseMovement(float xoffset, float yoffset)
 {
 	// Aktualizujemy kąty Yaw(odchylenia - X) i Pitch(pochylenie - Y) na podstawie ruchu myszy
@@ -47,6 +52,7 @@ void Camera::processMouseMovement(float xoffset, float yoffset)
 	updateCameraVectors();
 }
 
+// Metoda updateCameraVectors: Metoda odpowiada za przeliczenie wektorow Front, Right, Up
 void Camera::updateCameraVectors()
 {
 	//Obliczamy nowy wektor kierunku patrzenia kamery (front) na podstawie aktualnych kątów Yaw i Pitch. Używamy funkcji trygonometrycznych aby przekształcić kąty na wektor kierunku w przestrzeni 3D
@@ -65,6 +71,7 @@ void Camera::updateCameraVectors()
 
 //Frustum------------------------------------------------------------
 
+// Metoda getFrustum: Metoda buduje wirtualne sciany naszego stozka widzenia 
 Frustum Camera::getFrustum(float aspectRatio) const 
 {
 	Frustum frustum;
@@ -115,24 +122,26 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	return frustum;
 }
 
-
+// Metoda isAABoundingBoxVisible: Metoda sprawdza czy dane trojwymiarowy blok/pudelko np.Chunk jest w ogole na ekranie - czyli czy mozemy go zobaczyc
 bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const
 {
-	
+	// Uzywamy naszych 6 scian aby uzyc ich w petli
 	const Plane* planes[6] = { &frustum.far, &frustum.near, &frustum.top, &frustum.bottom, &frustum.right, &frustum.left };
 
 	for (int i = 0; i < 6; i++) {
-
+		// Szukamy tego rogu trojwymiarowego pudelka np.Chunka, ktory jest najbardziej wysuniety w strone aktualnej sciany
 		glm::vec3 farthestVertex = aabb.min;
 		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }
 		if (planes[i]->normal.y >= 0) { farthestVertex.y = aabb.max.y; }
 		if (planes[i]->normal.z >= 0) { farthestVertex.z = aabb.max.z; }
 
+		// Jesli najbardziej wysuniety rog pudelka schowal sie za nasza sciana Frustruma
+		// to na 100% mozemy stwierdzic, ze pudelko nie znajduje sie w polu widzenia i gracz go nie widzi
 		if (glm::dot(planes[i]->normal, farthestVertex) + planes[i]->distance < 0) {
-			return false;
+			return false; // Ustawiamy false
 		}
 
 	}
 
-	return true;
+	return true; // Jesli "pudelko" znajduje sie choc troche w polu widzenia to return true
 }

@@ -7,6 +7,7 @@
 
 #include "world/WorldConfig.h"
 
+// Struktura Plaszczyzn -> Ktora przyda sie w Camera Frustum
 struct Plane {
 	glm::vec3 normal;
 	float distance;
@@ -18,6 +19,7 @@ struct Plane {
 	}
 };
 
+// Struktura Frustum -> Frustum zawiera obiekty Plane
 struct Frustum {
 	Plane far;
 	Plane near;
@@ -32,6 +34,8 @@ struct AA_BoundingBox {
 	glm::vec3 min;
 };
 
+
+// Klasa Camera: Odpowiada za calosc kamery
 class Camera
 {
 private:
@@ -55,17 +59,17 @@ public:
 
 	glm::vec3 position; // Pozycja kamery w przestrzeni świata
 	glm::vec3 front; // Kierunek, w którym kamera jest skierowana
-	glm::vec3 up; // Wektor "góry" kamery, używany do określenia orientacji
+	glm::vec3 up; // Wektor "gory" kamery, uzywany do okreslenia orientacji
 	glm::vec3 right; // Wektor "prawo" kamery, prostopadły do front i up
 
-	glm::vec3 worldUp; // Wektor "góry" świata, używany do obliczania orientacji kamery
+	glm::vec3 worldUp; // Wektor "gory" swiata, używany do obliczania orientacji kamery
 
 	float movementSpeed;
 
 	// Konstruktor inicjalizujący kamerę na określonej pozycji.
 	Camera(glm::vec3 startPosition = glm::vec3(0.0f, 0.0f, 3.0f));
 
-	// Metoda do uzyskania macierzy widoku kamery która będzie używana w shaderze
+	// Metoda do uzyskania macierzy widoku kamery ktora bedzie uzywana w shaderze
 	glm::mat4 getViewMatrix() const;
 
 	// Metoda do uzyskania macierzy projekcji kamery która będzie używana w shaderze.

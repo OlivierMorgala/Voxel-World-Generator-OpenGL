@@ -7,6 +7,7 @@ struct vector2 {
     float x, y;
 };
 
+// Klasa SimplexNoise
 class SimplexNoise : public TerrainAlgorithm
 {
 private:
