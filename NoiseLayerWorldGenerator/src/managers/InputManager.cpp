@@ -1,47 +1,49 @@
 #include "managers/InputManager.h"
 #include <imgui_impl_glfw.h>
 
+// Tablice stanów klawiszy dla aktualnej i poprzedniej klatki
 bool InputManager::keyStates[GLFW_KEY_LAST] = { false };
 bool InputManager::prevKeyStates[GLFW_KEY_LAST] = { false };
 bool InputManager::mouseButtonStates[GLFW_MOUSE_BUTTON_LAST] = { false };
 bool InputManager::prevMouseButtonStates[GLFW_MOUSE_BUTTON_LAST] = { false };
 
+// Pozycja myszy i wartości delta (przesunięcie w klatce)
 double InputManager::mouseX = 0.0;
 double InputManager::mouseY = 0.0;
 double InputManager::lastMouseX = 0.0;
 double InputManager::lastMouseY = 0.0;
-
 glm::vec2 InputManager::mouseDelta = glm::vec2(0.0f, 0.0f);
 glm::vec2 InputManager::sensitivity = glm::vec2(0.05f, 0.05f);
 
+// Aktualizacja stanów wywoływana co klatkę
 void InputManager::updateKeyStates() {
-	// Kopiowanie aktualnych stanów klawiszy i przycisków myszy do tablic poprzednich stanów
 	std::memcpy(prevKeyStates, keyStates, sizeof(keyStates));
 	std::memcpy(prevMouseButtonStates, mouseButtonStates, sizeof(mouseButtonStates));
 
-	// Obliczanie delty ruchu myszy
+	// Obliczanie przesunięcia (delta) - Y jest odwrócone (ekran vs świat 3D)
 	float deltaX = static_cast<float>(mouseX - lastMouseX);
 	float deltaY = static_cast<float>(lastMouseY - mouseY);
 
-	// Skalowanie delty ruchu myszy przez czułość i zapisanie jej jako wektor
 	mouseDelta = glm::vec2(deltaX * sensitivity.x, deltaY * sensitivity.y);
 
-	//aktualizacja pozycji myszy do obliczania delty w następnej klatce
 	lastMouseX = mouseX;
 	lastMouseY = mouseY;
 }
 
+// Sprawdzenie, czy klawisz jest wciśnięty
 bool InputManager::isKeyPressed(int key)
 {
 	if (key < 0 || key >= GLFW_KEY_LAST) { return false; }
 	return keyStates[key];
 }
 
+// Sprawdzenie, czy klawisz został wciśnięty dokładnie w TEJ klatce
 bool InputManager::isKeyJustPressed(int key) {
 	if (key < 0 || key >= GLFW_KEY_LAST) { return false; };
-	return ( keyStates[key] && !prevKeyStates[key] );
+	return (keyStates[key] && !prevKeyStates[key]);
 }
 
+// Sprawdzenie, czy kliknięto przycisk myszy
 bool InputManager::isMouseButtonPressed(int button)
 {
 	if (button < 0 || button >= GLFW_MOUSE_BUTTON_LAST) { return false; }
@@ -58,6 +60,7 @@ glm::vec2 InputManager::getMouseDelta()
 	return mouseDelta;
 }
 
+// Obsługa zdarzeń z GLFW z uwzględnieniem ImGui
 void InputManager::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
