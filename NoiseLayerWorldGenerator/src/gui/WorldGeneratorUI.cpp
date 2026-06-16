@@ -374,7 +374,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                         for (int i = 0; i < allBlocks.size(); i++) {
                             bool isSelected = (currentLayer.blockID == i);
                             ImVec4 col(allBlocks[i].color.x, allBlocks[i].color.y, allBlocks[i].color.z, 1.0f);
-
+                            ImGui::PushID(i + 2000);
                             if (allBlocks[i].isTransparent) {
                                 ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.2f, 0.8f, 1.0f, 1.0f));
                                 ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
@@ -397,6 +397,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                                 ImGui::SameLine();
                                 ImGui::TextColored(ImVec4(0.2f, 0.8f, 1.0f, 1.0f), "[T]");
                             }
+                            ImGui::PopID();
                         }
                         ImGui::EndCombo();
                     }
@@ -424,7 +425,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                                 ImGui::PushID(i + 1000);
                                 ImGui::ColorButton("##targetColor", col, ImGuiColorEditFlags_NoTooltip, ImVec2(15, 15));
-                                ImGui::PopID();
+                                
 
                                 ImGui::SameLine();
                                 if (ImGui::Selectable(allBlocks[i].name.c_str(), isSelected)) {
@@ -432,6 +433,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                                 }
 
                                 if (isSelected) ImGui::SetItemDefaultFocus();
+                                ImGui::PopID();
                             }
                             ImGui::EndCombo();
                         }
