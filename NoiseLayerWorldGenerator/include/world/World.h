@@ -22,8 +22,8 @@
 #include "WorldConfig.h"
 
 //Limity operacji na jedną klatkę (dla zpobiegania gwałtownym spakom FPS przy poruszaniu)
-constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 1;
-constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 6;
+constexpr int MAX_CHUNKS_GENERATED_PER_FRAME = 2;
+constexpr int MAX_CHUNKS_UPLOADED_PER_FRAME = 8;
 
 //Enum stanów świata określa czy świat się ładuje podczas ekranu łądowania czy normalnie podczas sceny 
 enum class WorldState {
@@ -80,7 +80,7 @@ private:
 	int totalChunksToGenerate = (2 * config.renderDistance + 1) * (2 * config.renderDistance + 1);
     
     //Kolejka wskaźników na kolumny które mają gotowe siatki i czekają na wysłąnie do GPU
-	std::deque<ChunkColumn*> uploadToGPUQueue;
+	std::deque<std::shared_ptr<ChunkColumn>> uploadToGPUQueue;
 	mutable std::mutex uploadQueueMutex;
 
     //Zbiór przechowujący współrzędne kolumn któree są aktualnie w trakcie generacji (głównie po to żeby nie liczyć kolumn więcej razy)
@@ -94,7 +94,7 @@ private:
 
     //Główna mapa przechowująca wszystkie załadowane kolumny chunków
     //Używamy shered_mutex aby umożliwić jednoczesny odczyt przez wiele wątków (zapis jak coś jest dalej jedynie dla jednego wątku!!!!)
-    std::unordered_map<ChunkCords, std::unique_ptr<ChunkColumn>, ChunkCordsHash> columnsMap;
+    std::unordered_map<ChunkCords, std::shared_ptr<ChunkColumn>, ChunkCordsHash> columnsMap;
     mutable std::shared_mutex columnsMapMutex;
 
     //Funkcja które dodaje nowe zadania do kolejki dla wątków
@@ -122,7 +122,7 @@ public:
 
     //Metdoy do zarządzania kolumnami chunków
     void addChunkColumn(int x, int z);
-    ChunkColumn* getChunkColumn(int x, int z) const;
+    std::shared_ptr<ChunkColumn> getChunkColumn(int x, int z) const;
     std::vector<ChunkColumn*> getLoadedColumns() const;
 
 
@@ -133,6 +133,6 @@ public:
     int getLoadedChunkColumnsCount();
 
     //Metoda wymuszająca odświerzenie siatki po modyfikacji PRZEZ GRACZA
-    void renderAlteredChunks(ChunkColumn* column);
+    void renderAlteredChunks(std::shared_ptr<ChunkColumn> column);
 };
 

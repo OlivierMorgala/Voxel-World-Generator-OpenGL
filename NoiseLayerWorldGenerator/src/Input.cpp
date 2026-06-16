@@ -29,7 +29,7 @@ glm::vec2 Input::getMouseDelta()
 }
 
 // Sprawdzenie, czy kursor aktualnie nakierowany jest na element UI
-// Chroni to przed przypadkowym kopaniem dołu/strzelaniem, gdy się klika np. na suwak
+// Chroni to przed przypadkowym kopaniem dołu, gdy się klika np. na suwak
 bool Input::isMouseOverUI()
 {
 	return ImGui::GetIO().WantCaptureMouse;

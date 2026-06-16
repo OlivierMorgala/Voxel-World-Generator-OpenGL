@@ -159,23 +159,23 @@ int World::getLoadedChunkColumnsCount()
 
 void World::addChunkColumn(int x, int z)
 {
-	//std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
+	std::cout << "+[WORLD] Generuje kolumne: " << x << ", " << z << std::endl;
 
 	//Tworzymy nową kolumne w pamięci
 	ChunkCords position = { x, z };
-	auto column = std::make_unique<ChunkColumn>(x, z);
+	auto column = std::make_shared<ChunkColumn>(x, z);
 
 	//Używamy generatora terenu do obliczenia szumu dla kolumny (zbioru szumów i modyfikacji)
 	if (terrainGenerator) {
 		terrainGenerator->applyToColumn(*column);
 	}
 
-	ChunkColumn* columnPtr = column.get();
+	std::shared_ptr<ChunkColumn> columnPtr = column;
 
 	{
 		//Zapisujemy gotową kolumnę do mapy świata 
 		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
-		columnsMap[position] = std::move(column);
+		columnsMap[position] = column;
 	}
 
 	//Dodajemy do kolejki zadanie budowy nowej siatki dla kolumny
@@ -200,7 +200,7 @@ void World::addChunkColumn(int x, int z)
 	
 	for (int i = 0; i < 4; i++) {
 		//Pobieramy wskaźnik na jednaego z sądsaidów 
-		ChunkColumn* neighborColumn = getChunkColumn(x + neighborShiftX[i], z + neighborShiftZ[i]);
+		std::shared_ptr<ChunkColumn> neighborColumn = getChunkColumn(x + neighborShiftX[i], z + neighborShiftZ[i]);
 
 		//Jeśli sąsiad istnieje w pamięci zlecamy przebudowe jego siatki
 		if (neighborColumn) {
@@ -226,7 +226,7 @@ void World::addChunkColumn(int x, int z)
 
 
 //Metoda pobierająca kolumne o kordynatach x oraz z w siatce kolumn
-ChunkColumn* World::getChunkColumn(int x, int z) const
+std::shared_ptr<ChunkColumn> World::getChunkColumn(int x, int z) const
 {
 	//Zakładmy blokade dzieloną która umożliiwia wieu wątkom na raz pobierać dane z mapy
 	std::shared_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
@@ -236,7 +236,7 @@ ChunkColumn* World::getChunkColumn(int x, int z) const
 
 	//Jeśli kolumna istnieje zwracamy na nią wskaźnik
 	if (it != columnsMap.end()) {
-		return it->second.get();
+		return it->second;
 	}
 
 	return nullptr;
@@ -288,7 +288,7 @@ void World::setBlock(int x, int y, int z, BlockID blockID)
 }
 
 // METODA ODPOWIADA ZA PONOWNE RENDEROWANIE CHUNKOW KTORE ZOSTALY ZMIENIONE PRZEZ UZYTKOWNIKA -> CZYLI TAKIE NA KTORYM ZNISZCZONO LUB POSTAWIONO BLOK
-void World::renderAlteredChunks(ChunkColumn* column)
+void World::renderAlteredChunks(std::shared_ptr<ChunkColumn> column)
 {
 
 	//Zlecamy zadanie przebudowy siatki dla zaktualizowanego chunka na jednym z wątków
@@ -337,7 +337,7 @@ BlockID World::getBlock(int x, int y, int z) const
 
 void World::updateWorld()
 {
-	std::vector<ChunkColumn*> chunksToUploadThisFrame;
+	std::vector<std::shared_ptr<ChunkColumn>> chunksToUploadThisFrame;
 	bool isQueueEmpty = true;
 
 	{
@@ -347,7 +347,7 @@ void World::updateWorld()
 		//Ograniczamy lcizbę uploadów siatek na klatkę (MAX_CHUNKS_UPLOADED_PER_FRAME)
 		//zapobiega to przycinianiu gdy renderują się duża fragmenty terenu na raz
 		while (!uploadToGPUQueue.empty() && chunksProcessedThisFrame < MAX_CHUNKS_UPLOADED_PER_FRAME) {
-			ChunkColumn* column = uploadToGPUQueue.front();
+			std::shared_ptr<ChunkColumn> column = uploadToGPUQueue.front();
 			uploadToGPUQueue.pop_front();
 			column->isMeshUploadPending = false;
 
@@ -358,7 +358,7 @@ void World::updateWorld()
 	}
 
 	//Przesyłamy obliczoną siatkę do GPU (TRZEBA W GŁÓWNYM WĄTKU przez architektóre OpenGL)
-	for (ChunkColumn* column : chunksToUploadThisFrame) {
+	for (std::shared_ptr<ChunkColumn>& column : chunksToUploadThisFrame) {
 		column->uploadMeshToGPU();
 	}
 
@@ -424,7 +424,7 @@ void World::updateWorld()
 
 		//Przekazujemy nowe kolumny do wątków roboczych
 		for (const auto& coords : chunksToGenerateThisFrame) {
-			//std::cout << "+[WORLD] Dodano kolumne do generowania: " << coords.x << ", " << coords.z << std::endl;
+			std::cout << "+[WORLD] Dodano kolumne do generowania: " << coords.x << ", " << coords.z << std::endl;
 
 			enqueueTask([this, coords]() {
 				//Przerywamy jeśli wyłączone dalszą generację
@@ -459,8 +459,8 @@ void World::updateWorld()
 			std::lock_guard<std::mutex> uploadQueueLock(uploadQueueMutex);
 
 			//Przechodzimy przez wszystkie kolumny które trzeba usnuąć z pamięci 
-			for (const auto& coords : chunksToUnload) {
-				ChunkColumn* columnPtr = columnsMap[coords].get();
+			for (const ChunkCords& coords : chunksToUnload) {
+				std::shared_ptr<ChunkColumn> columnPtr = columnsMap[coords];
 
 				//Oznaczamy chunk do usunięcia (wątki w tle mogą dalej je modyfikaować!!!!!)
 				columnPtr->isMarkedForDeletion = true;
@@ -476,8 +476,7 @@ void World::updateWorld()
 	}
 
 
-	//Gdy wszystkie zadania zostaną wykonane w klatce
-	if (pendingTasks == 0) {
+	{
 		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
 
 		//Usuwamy wszystkie oznaczone do usunięcia chunki z pamięci
@@ -591,7 +590,7 @@ void World::regenerateWorld()
 							if (!isGenerating) { return; }
 
 							ChunkCords coords = {camColX + x, camColZ + z};
-							auto column = std::make_unique<ChunkColumn>(coords.x, coords.z);
+							auto column = std::make_shared<ChunkColumn>(coords.x, coords.z);
 
 							//Wypełnianie kolumny bolkami według algorytmu szumu
 							if (terrainGenerator) {
@@ -601,7 +600,7 @@ void World::regenerateWorld()
 							//Przeniesienie kolumny do mapy świaata
 							{
 								std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
-								columnsMap[coords] = std::move(column);
+								columnsMap[coords] = column;
 							}
 						}
 
@@ -630,7 +629,7 @@ void World::regenerateWorld()
 							if (!isGenerating) { return; }
 
 							ChunkCords coords = { camColX + x, camColZ + z };
-							ChunkColumn* colPtr = getChunkColumn(coords.x, coords.z);
+							std::shared_ptr<ChunkColumn> colPtr = getChunkColumn(coords.x, coords.z);
 
 							if (colPtr) {
 

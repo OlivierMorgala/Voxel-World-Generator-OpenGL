@@ -23,7 +23,7 @@ void WorldRenderer::render(World& world, const Camera& camera, Shader& shader, f
 	int cameraBlockY = static_cast<int>(std::floor(camera.position.y));
 	int cameraBlockZ = static_cast<int>(std::floor(camera.position.z));
 
-	ChunkColumn* cameraColumn = world.getChunkColumn(cameraColumnX, cameraColumnZ);
+	std::shared_ptr<ChunkColumn> cameraColumn = world.getChunkColumn(cameraColumnX, cameraColumnZ);
 	if (cameraColumn) {
 		int localX = cameraBlockX % Chunk::CHUNK_SIZE;
 		if(localX < 0) { localX += Chunk::CHUNK_SIZE; }

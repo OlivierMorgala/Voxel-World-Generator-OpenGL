@@ -2,8 +2,11 @@
 #include "scenes/WorldGeneratorScene.h" 
 #include "managers/SceneManager.h"      
 #include "managers/TextureManager.h"  
-#include "world\generationAlgorithms\PerlinNoise2D.h"
-#include "world\generationAlgorithms\FlatFill.h"
+#include "world/generationAlgorithms/PerlinNoise2D.h"
+#include "world/generationAlgorithms/PerlinNoise3D.h"
+#include "world/generationAlgorithms/SimplexNoise.h"
+#include "world/generationAlgorithms/FlatFill.h"
+#include "world/generationAlgorithms/TerrainModifiers.h"
 #include <imgui.h>
 #include <iostream>
 #include <memory>
@@ -131,21 +134,74 @@ void StartingScene::onImGuiRender()
 
         // Przyciski przekazujące różną listę warstw (Preset) do właściwej gry
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
-        if (ImGui::Button("Mountain Valley Preset", ImVec2(buttonWidth, buttonHeight))) {
+        if (ImGui::Button("1. Small Islands", ImVec2(buttonWidth, buttonHeight))) {
+            preset.clear();
+
+            // 1. Dno oceanu (Piasek ID: 4 - łagodne falowanie na dole)
+            TerrainLayer seabed("Ocean Floor", 10, 25, 4, std::make_unique<SimplexNoise>(123, 0.015f, 1.0f, 2, 2.0f, 0.5f));
+            seabed.blendMode = BlendMode::NORMAL;
+            preset.push_back(std::move(seabed));
+
+            // 2. Duże wyspy / Góry (Kamień ID: 2)
+            // ZWIĘKSZONA CZĘSTOTLIWOŚĆ (0.008f z 0.0025f) -> góry są znacznie bliżej siebie
+            TerrainLayer mountains("Large Islands", 15, 95, 2, std::make_unique<PerlinNoise2D>(456, 0.008f, 1.0f, 4, 2.0f, 0.5f));
+            mountains.blendMode = BlendMode::MAX;
+            auto mountainPower = std::make_unique<ModifierPower>();
+            // ZMNIEJSZONA POTĘGA (2.0f z 3.5f) -> góry są szersze i częściej wystają ponad taflę wody (Y=40)
+            mountainPower->exponent = 2.0f;
+            mountains.activeModifiers.push_back(std::move(mountainPower));
+            preset.push_back(std::move(mountains));
+
+            // 3. Bardzo częste, mniejsze wyspy (Ziemia ID: 1)
+            // MOCNO ZWIĘKSZONA CZĘSTOTLIWOŚĆ (0.035f z 0.015f) -> mnóstwo małych wysepek
+            TerrainLayer smallIslands("Small Islands", 20, 52, 1, std::make_unique<SimplexNoise>(789, 0.035f, 1.0f, 3, 2.0f, 0.5f));
+            smallIslands.blendMode = BlendMode::MAX;
+            auto islandPower = std::make_unique<ModifierPower>();
+            // ZMNIEJSZONA POTĘGA (1.2f z 1.8f) -> większość pagórków tego szumu staje się lądem
+            islandPower->exponent = 1.2f;
+            smallIslands.activeModifiers.push_back(std::move(islandPower));
+            preset.push_back(std::move(smallIslands));
+
+            // 4. Warstwa trawy na samej górze terenu (Trawa ID: 3, 1 blok grubości przez tryb ADD)
+            TerrainLayer grassTop("Grass Surface", 0, 1, 3, std::make_unique<FlatFill>());
+            grassTop.blendMode = BlendMode::ADD;
+            preset.push_back(std::move(grassTop));
+
+            // 5. Zmiana trawy na piasek pod wodą i na plażach (Y: 0 do 42)
+            TerrainLayer beaches("Beaches", 0, 42, 4, std::make_unique<FlatFill>());
+            beaches.blendMode = BlendMode::CARVEIN;
+            beaches.targetBlockID = 3; // Zamieniamy zieloną trawę (3) na piasek (4)
+            beaches.blendWeight = 0.5f;
+            preset.push_back(std::move(beaches));
+
+            // 6. Ośnieżone szczyty najwyższych gór (Y: 75+)
+            TerrainLayer snowPeaks("Snow Peaks", 75, 255, 5, std::make_unique<FlatFill>());
+            snowPeaks.blendMode = BlendMode::CARVEIN;
+            snowPeaks.targetBlockID = 3; // Zamieniamy trawę na szczytach na śnieg (5)
+            snowPeaks.blendWeight = 0.5f;
+            preset.push_back(std::move(snowPeaks));
+
+            // 7. Wypełnienie oceanu wodą (Woda ID: 15, Y: 0 do 40)
+            TerrainLayer water("Water Fill", 0, 40, 15, std::make_unique<FlatFill>());
+            water.blendMode = BlendMode::CARVEIN;
+            water.targetBlockID = 0; // Woda zastępuje tylko powietrze (Air - ID 0)
+            water.blendWeight = 0.5f;
+            preset.push_back(std::move(water));
+
+            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
+
+        }
+
+        ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
+        if (ImGui::Button("2. Przykład", ImVec2(buttonWidth, buttonHeight))) {
             preset.clear();
             SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
         }
 
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
-        if (ImGui::Button("Desert Dunes Preset", ImVec2(buttonWidth, buttonHeight))) {
-            preset.clear();
-            SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
-        }
-
-        ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
-        if (ImGui::Button("Frozen Peaks Preset", ImVec2(buttonWidth, buttonHeight))) {
+        if (ImGui::Button("3. Przykład", ImVec2(buttonWidth, buttonHeight))) {
             preset.clear();
 
             // Ręczny kod presetu np. dla ośnieżonych gór (High Peaks)

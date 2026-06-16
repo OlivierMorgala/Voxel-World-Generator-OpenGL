@@ -83,10 +83,10 @@ void ChunkColumn::buildMeshFromPendingData(const World& world)
 
 
 	//Pobieramy sąsiadujące kolumny w celu obsłużenia cullingu na granicach kolumn. Unikamy renderowania ścian, 
-	ChunkColumn* frontColumn = world.getChunkColumn(columnX, columnZ + 1);
-	ChunkColumn* backColumn = world.getChunkColumn(columnX, columnZ - 1);
-	ChunkColumn* leftColumn = world.getChunkColumn(columnX - 1, columnZ);
-	ChunkColumn* rightColumn = world.getChunkColumn(columnX + 1, columnZ);
+	std::shared_ptr<ChunkColumn> frontColumn = world.getChunkColumn(columnX, columnZ + 1);
+	std::shared_ptr<ChunkColumn> backColumn = world.getChunkColumn(columnX, columnZ - 1);
+	std::shared_ptr<ChunkColumn> leftColumn = world.getChunkColumn(columnX - 1, columnZ);
+	std::shared_ptr<ChunkColumn> rightColumn = world.getChunkColumn(columnX + 1, columnZ);
 
 	for (int i = 0; i < chunks.size(); i++) {
 
