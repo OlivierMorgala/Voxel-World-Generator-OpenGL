@@ -38,6 +38,7 @@ public:
 	ChunkColumn(int x, int z);
 	~ChunkColumn() = default;
 
+	std::atomic<bool> isMarkedForDeletion = false;
 	std::atomic<bool> isMeshUploadPending = false;
 
 	void setBlock(int x, int y, int z, BlockID blockID);

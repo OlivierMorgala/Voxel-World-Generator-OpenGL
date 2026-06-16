@@ -13,7 +13,8 @@ enum class BlendMode {
 	MIN,
 	SMOOTH,
 	ABSOLUTE,
-	CARVE
+	CARVE,
+	CARVEIN
 };
 
 class TerrainModifier
@@ -42,7 +43,9 @@ public:
 	bool isEnabled = true;
 
 	BlendMode blendMode = BlendMode::ABSOLUTE;
-	float blendWeight = 0.5f; //Tylko dla SMOOTH
+
+	BlockID targetBlockID = 1; //Tylko dla CARVEIN
+	float blendWeight = 0.5f; //Tylko dla SMOOTH i CARVE
 
 	int startY;
 	int endY;

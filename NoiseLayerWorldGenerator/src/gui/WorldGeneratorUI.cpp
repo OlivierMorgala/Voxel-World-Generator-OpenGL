@@ -392,11 +392,38 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 
                 ImGui::Spacing();
                 
-                const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE", "CARVE"};
+                const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE", "CARVE", "CARVEIN"};
                 ImGui::Combo("Blending Mode", (int*)&currentLayer.blendMode, blendNames, IM_ARRAYSIZE(blendNames));
 
                 if (currentLayer.blendMode == BlendMode::SMOOTH || currentLayer.blendMode == BlendMode::CARVE) {
                     ImGui::SliderFloat("Blending Weight", &currentLayer.blendWeight, 0.0f, 1.0f);
+                }
+
+                if (currentLayer.blendMode == BlendMode::CARVEIN) {
+                    ImGui::Spacing();
+                    ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "Target Block (Carve ONLY in this):");
+
+                    if (currentLayer.targetBlockID < allBlocks.size()) {
+                        if (ImGui::BeginCombo("##TargetBlock", allBlocks[currentLayer.targetBlockID].name.c_str())) {
+
+                            for (int i = 0; i < allBlocks.size(); i++) {
+                                bool isSelected = (currentLayer.targetBlockID == i);
+                                ImVec4 col(allBlocks[i].color.x, allBlocks[i].color.y, allBlocks[i].color.z, 1.0f);
+
+                                ImGui::PushID(i + 1000);
+                                ImGui::ColorButton("##targetColor", col, ImGuiColorEditFlags_NoTooltip, ImVec2(15, 15));
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                if (ImGui::Selectable(allBlocks[i].name.c_str(), isSelected)) {
+                                    currentLayer.targetBlockID = static_cast<BlockID>(i);
+                                }
+
+                                if (isSelected) ImGui::SetItemDefaultFocus();
+                            }
+                            ImGui::EndCombo();
+                        }
+                    }
                 }
 
                 ImGui::Spacing();

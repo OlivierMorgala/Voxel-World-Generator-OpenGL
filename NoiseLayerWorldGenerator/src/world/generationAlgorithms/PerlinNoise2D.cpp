@@ -26,6 +26,10 @@ float PerlinNoise2D::evaluate(float x, float z) {
     return (rawNoise + 1.0f) * 0.5f;
 }
 
+float PerlinNoise2D::evaluate3D(float x, float y, float z) {
+    return evaluate(x, z);
+}
+
 void PerlinNoise2D::renderImGui() {
     ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.0001f, 2.0f);
     ImGui::DragFloat("Amplitude", &amplitude, 0.5f, 0.0f, 1000.0f);

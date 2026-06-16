@@ -403,15 +403,29 @@ void World::updateWorld()
 			for (const auto& coords : chunksToUnload) {
 				ChunkColumn* columnPtr = columnsMap[coords].get();
 
+				columnPtr->isMarkedForDeletion = true;
+
 				auto it = std::find(uploadToGPUQueue.begin(), uploadToGPUQueue.end(), columnPtr);
 				if (it != uploadToGPUQueue.end()) {
 					uploadToGPUQueue.erase(it);
 				}
-				columnsMap.erase(coords);
 			}
 		}
 
+	}
 
+
+	if (pendingTasks == 0) {
+		std::unique_lock<std::shared_mutex> columnsMapLock(columnsMapMutex);
+
+		for (auto it = columnsMap.begin(); it != columnsMap.end(); ) {
+			if (it->second->isMarkedForDeletion) {
+				it = columnsMap.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
 	}
 }
 

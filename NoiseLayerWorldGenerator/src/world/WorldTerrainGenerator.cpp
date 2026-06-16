@@ -17,12 +17,19 @@ void WorldTerrainGenerator::applyToColumn(ChunkColumn& column) {
             for (const TerrainLayer& layer : generationLayers) {
                 if (!layer.isEnabled || !layer.algorithm) { continue; }
 
-                if (layer.blendMode == BlendMode::CARVE) {
+                if (layer.blendMode == BlendMode::CARVE || layer.blendMode == BlendMode::CARVEIN) {
 
                     int absoluteBottom = std::clamp(layer.startY, 0, maxWorldHeight);
                     int absoluteTop = std::clamp(layer.endY, 0, maxWorldHeight);
 
                     for (int y = absoluteBottom; y <= absoluteTop; y++) {
+
+                        if (layer.blendMode == BlendMode::CARVEIN) {
+                            if (column.getBlock(x, y, z) != layer.targetBlockID) {
+                                continue;
+                            }
+                        }
+
                         float noise3DValue = layer.algorithm->evaluate3D(worldX + x, static_cast<float>(y), worldZ + z);
 
                         for (const auto& modification : layer.activeModifiers) {

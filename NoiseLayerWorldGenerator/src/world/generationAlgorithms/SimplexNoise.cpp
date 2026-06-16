@@ -39,6 +39,10 @@ float SimplexNoise::evaluate(float x, float z)
     return (normalizedRawNoise + 1.0f) * 0.5f;
 }
 
+float SimplexNoise::evaluate3D(float x, float y, float z) {
+    return evaluate(x, z);
+}
+
 void SimplexNoise::renderImGui()
 {
     ImGui::DragFloat("Frequency", &frequency, 0.001f, 0.0001f, 2.0f, "%.4f");
