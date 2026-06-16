@@ -1,7 +1,6 @@
 #include "world/WorldTerrainGenerator.h"
 #include "world/Chunk.h"
 #include "world/WorldConfig.h"
-#include <algorithm>
 
 void WorldTerrainGenerator::applyToColumn(ChunkColumn& column) {
     int worldX = column.getX() * Chunk::CHUNK_SIZE;
