@@ -13,8 +13,8 @@ private:
     float frequency;
     float amplitude;
     int octaves;
-    float frequencyChange; // Decyduje jak zmienia sie frequency po kazdej oktawie
-    float amplitudeChange; // Decyduje jak zmienia sie amplitude po kazdej oktawie
+    float frequencyChange; 
+    float amplitudeChange; 
     std::vector<int> PermutationPerlin3D;
 
     // Funkcje pomocnicze
@@ -27,7 +27,7 @@ public:
     PerlinNoise3D(unsigned seed = 1234, float frequency = 1.0f, float amplitude = 1.0f,
         int octaves = 4, float freqchange = 2.0f, float ampchange = 0.5f);
 
-    // Implementacja metod wirtualnych
+    
     float evaluate(float x, float z) override;
     float evaluate3D(float x, float y, float z) override;
     void renderImGui() override;
