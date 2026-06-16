@@ -97,10 +97,10 @@ private:
     std::unordered_map<ChunkCords, std::shared_ptr<ChunkColumn>, ChunkCordsHash> columnsMap;
     mutable std::shared_mutex columnsMapMutex;
 
-    //Funkcja które dodaje nowe zadania do kolejki dla wątków
+    //Metoda która dodaje nowe zadania do kolejki dla wątków
     void enqueueTask(std::function<void()> task);
 
-    //Funkcja pomocnicza przeliczająca globalne wspólrzędne bloku na współrzędne kolumny i lokalne współrzędne bloku wewnątrz chunka
+    //Metoda pomocnicza przeliczająca globalne wspólrzędne bloku na współrzędne kolumny i lokalne współrzędne bloku wewnątrz chunka
 	void getLocalCoords(int globalX, int globalZ, int& columnX, int& columnZ, int& localX, int& localZ) const;
 
 public:

@@ -17,7 +17,7 @@ public:
 	Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
 	~Mesh();
 
-	// Funkcja która renderuje siatkę. 
+	// Metoda która renderuje siatkę. 
 	void draw() const;
 
 	void updateData(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
@@ -34,7 +34,7 @@ private:
 	// Liczba wierzchołków w siatce używana do określenia ile wierzchołków ma zostać narysowanych podczas renderowania
 	int vertexCount;
 
-	// Funkcja pomocnicza do ustawiania atrybutów wierzchołków
+	// Metoda pomocnicza do ustawiania atrybutów wierzchołków
 	void setupAttributes();
 };
 

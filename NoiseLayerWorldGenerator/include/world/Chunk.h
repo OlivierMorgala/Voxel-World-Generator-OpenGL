@@ -22,8 +22,8 @@ private:
 	// ID bloku który będzie używany do wypełniania jeśli sekcja jest jednolita
 	BlockID fillBlockID;
 
-	// Funkcja pomocnicza do pobierania ID bloku z sąsiedniej sekcji.
-	// Ta funkcja jest używana podczas generowania siatki aby sprawdzić widoczność ścianek na granicy sekcji
+	// Metoda pomocnicza do pobierania ID bloku z sąsiedniej sekcji.
+	// Ta metoda jest używana podczas generowania siatki aby sprawdzić widoczność ścianek na granicy sekcji
 	BlockID getBlockFromNeighbor(Chunk* neighbor, int x, int y, int z, BlockID fallbackBlockID) const;
 
 public:
@@ -38,9 +38,9 @@ public:
 		std::vector<Vertex>& transparentVertices, std::vector<uint32_t>& transparentIndices, uint32_t& transparentIndexOffset,
 		int chunkYOffset, Chunk* topNeighbor, Chunk* bottomNeighbor, Chunk* frontNeighbor, Chunk* backNeighbor, Chunk* leftNeighbor, Chunk* rightNeighbor) const;
 
-	// Funkcja ustawiająca ID bloku na podstawie jego pozycji w sekcji
+	// Metoda ustawiająca ID bloku na podstawie jego pozycji w sekcji
 	void setBlock(int x, int y, int z, BlockID blockID);
-	// Funkcja zwracająca ID bloku na podstawie jego pozycji w sekcji
+	// Metoda zwracająca ID bloku na podstawie jego pozycji w sekcji
 	BlockID getBlock(int x, int y, int z) const;
 
 };

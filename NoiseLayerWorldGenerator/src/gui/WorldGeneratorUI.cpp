@@ -19,7 +19,7 @@ WorldGeneratorUI::WorldGeneratorUI(WorldTerrainGenerator* generator, World* worl
 
 }
 
-// Główna funkcja rysująca panel boczny w ImGui
+// Główna metoda rysująca panel boczny w ImGui
 void WorldGeneratorUI::renderImGui(bool isMenuOpen)
 {
     if (!worldGenerator) return;
@@ -408,7 +408,7 @@ void WorldGeneratorUI::renderImGui(bool isMenuOpen)
                 const char* blendNames[] = { "NORMAL", "ADD", "SUBTRACT", "MULTIPLY", "MAX", "MIN", "SMOOTH" , "ABSOLUTE", "CARVE", "CARVEIN"};
                 ImGui::Combo("Blending Mode", (int*)&currentLayer.blendMode, blendNames, IM_ARRAYSIZE(blendNames));
 
-                if (currentLayer.blendMode == BlendMode::SMOOTH || currentLayer.blendMode == BlendMode::CARVE) {
+                if (currentLayer.blendMode == BlendMode::SMOOTH || currentLayer.blendMode == BlendMode::CARVE || currentLayer.blendMode == BlendMode::CARVEIN) {
                     ImGui::SliderFloat("Blending Weight", &currentLayer.blendWeight, 0.0f, 1.0f);
                 }
 

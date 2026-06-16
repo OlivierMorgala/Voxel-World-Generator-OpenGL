@@ -16,7 +16,7 @@ void SceneManager::popScene() {
 	pendingPop = true;
 }
 
-// Główna funkcja aktualizująca, odpala zmiany zaplanowane wyżej
+// Główna metoda aktualizująca, odpala zmiany zaplanowane wyżej
 void SceneManager::update(float deltaTime) {
 
 	// Ściąganie sceny ze stosu

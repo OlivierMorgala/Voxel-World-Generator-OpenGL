@@ -137,54 +137,43 @@ void StartingScene::onImGuiRender()
         if (ImGui::Button("1. Small Islands", ImVec2(buttonWidth, buttonHeight))) {
             preset.clear();
 
-            // 1. Dno oceanu (Piasek ID: 4 - łagodne falowanie na dole)
             TerrainLayer seabed("Ocean Floor", 10, 25, 4, std::make_unique<SimplexNoise>(123, 0.015f, 1.0f, 2, 2.0f, 0.5f));
             seabed.blendMode = BlendMode::NORMAL;
             preset.push_back(std::move(seabed));
 
-            // 2. Duże wyspy / Góry (Kamień ID: 2)
-            // ZWIĘKSZONA CZĘSTOTLIWOŚĆ (0.008f z 0.0025f) -> góry są znacznie bliżej siebie
             TerrainLayer mountains("Large Islands", 15, 95, 2, std::make_unique<PerlinNoise2D>(456, 0.008f, 1.0f, 4, 2.0f, 0.5f));
             mountains.blendMode = BlendMode::MAX;
             auto mountainPower = std::make_unique<ModifierPower>();
-            // ZMNIEJSZONA POTĘGA (2.0f z 3.5f) -> góry są szersze i częściej wystają ponad taflę wody (Y=40)
             mountainPower->exponent = 2.0f;
             mountains.activeModifiers.push_back(std::move(mountainPower));
             preset.push_back(std::move(mountains));
 
-            // 3. Bardzo częste, mniejsze wyspy (Ziemia ID: 1)
-            // MOCNO ZWIĘKSZONA CZĘSTOTLIWOŚĆ (0.035f z 0.015f) -> mnóstwo małych wysepek
             TerrainLayer smallIslands("Small Islands", 20, 52, 1, std::make_unique<SimplexNoise>(789, 0.035f, 1.0f, 3, 2.0f, 0.5f));
             smallIslands.blendMode = BlendMode::MAX;
             auto islandPower = std::make_unique<ModifierPower>();
-            // ZMNIEJSZONA POTĘGA (1.2f z 1.8f) -> większość pagórków tego szumu staje się lądem
             islandPower->exponent = 1.2f;
             smallIslands.activeModifiers.push_back(std::move(islandPower));
             preset.push_back(std::move(smallIslands));
 
-            // 4. Warstwa trawy na samej górze terenu (Trawa ID: 3, 1 blok grubości przez tryb ADD)
-            TerrainLayer grassTop("Grass Surface", 0, 1, 3, std::make_unique<FlatFill>());
+            TerrainLayer grassTop("Grass", 0, 1, 3, std::make_unique<FlatFill>());
             grassTop.blendMode = BlendMode::ADD;
             preset.push_back(std::move(grassTop));
 
-            // 5. Zmiana trawy na piasek pod wodą i na plażach (Y: 0 do 42)
             TerrainLayer beaches("Beaches", 0, 42, 4, std::make_unique<FlatFill>());
             beaches.blendMode = BlendMode::CARVEIN;
-            beaches.targetBlockID = 3; // Zamieniamy zieloną trawę (3) na piasek (4)
+            beaches.targetBlockID = 3;
             beaches.blendWeight = 0.5f;
             preset.push_back(std::move(beaches));
 
-            // 6. Ośnieżone szczyty najwyższych gór (Y: 75+)
-            TerrainLayer snowPeaks("Snow Peaks", 75, 255, 5, std::make_unique<FlatFill>());
+            TerrainLayer snowPeaks("Snow", 75, 255, 5, std::make_unique<FlatFill>());
             snowPeaks.blendMode = BlendMode::CARVEIN;
-            snowPeaks.targetBlockID = 3; // Zamieniamy trawę na szczytach na śnieg (5)
+            snowPeaks.targetBlockID = 3;
             snowPeaks.blendWeight = 0.5f;
             preset.push_back(std::move(snowPeaks));
 
-            // 7. Wypełnienie oceanu wodą (Woda ID: 15, Y: 0 do 40)
-            TerrainLayer water("Water Fill", 0, 40, 15, std::make_unique<FlatFill>());
+            TerrainLayer water("Water", 0, 40, 15, std::make_unique<FlatFill>());
             water.blendMode = BlendMode::CARVEIN;
-            water.targetBlockID = 0; // Woda zastępuje tylko powietrze (Air - ID 0)
+            water.targetBlockID = 0;
             water.blendWeight = 0.5f;
             preset.push_back(std::move(water));
 
@@ -194,14 +183,89 @@ void StartingScene::onImGuiRender()
 
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
-        if (ImGui::Button("2. Przykład", ImVec2(buttonWidth, buttonHeight))) {
+        if (ImGui::Button("2. Vulcanic Ashlands", ImVec2(buttonWidth, buttonHeight))) {
             preset.clear();
+
+            TerrainLayer hills("Base", 20, 67, 8, std::make_unique<SimplexNoise>(111, 0.018f, 1.5f, 3, 2.0f, 0.5f));
+            hills.blendMode = BlendMode::NORMAL;
+            preset.push_back(std::move(hills));
+
+            TerrainLayer rockMix("Subsurface", 0, 80, 6, std::make_unique<PerlinNoise3D>(222, 0.04f, 1.0f, 2, 2.0f, 0.5f));
+            rockMix.blendMode = BlendMode::CARVEIN;
+            rockMix.targetBlockID = 8;
+            rockMix.blendWeight = 0.5f;
+            preset.push_back(std::move(rockMix));
+
+            TerrainLayer volcanos("Mountains", 35, 170, 6, std::make_unique<PerlinNoise2D>(333, 0.006f, 1.0f, 4, 2.0f, 0.5f));
+            volcanos.blendMode = BlendMode::MAX;
+            auto volcanoPower = std::make_unique<ModifierPower>();
+            volcanoPower->exponent = 3.2f;
+            volcanos.activeModifiers.push_back(std::move(volcanoPower));
+            preset.push_back(std::move(volcanos));
+
+            TerrainLayer canyons("Canyons", 14, 180, 0, std::make_unique<SimplexNoise>(444, 0.009f, 1.0f, 3, 2.0f, 0.5f));
+            canyons.blendMode = BlendMode::CARVE;
+            auto canyonRidge = std::make_unique<ModifierRidged>();
+            canyons.activeModifiers.push_back(std::move(canyonRidge));
+            auto canyonPower = std::make_unique<ModifierPower>();
+            canyonPower->exponent = 1.5f;
+            canyons.activeModifiers.push_back(std::move(canyonPower));
+            canyons.blendWeight = 0.896f;
+            preset.push_back(std::move(canyons));
+
+            TerrainLayer caves("Caves", 5, 55, 0, std::make_unique<PerlinNoise3D>(555, 0.04f, 1.0f, 3, 2.0f, 0.5f));
+            caves.blendMode = BlendMode::CARVE;
+            caves.blendWeight = 0.58f;
+            preset.push_back(std::move(caves));
+
+            TerrainLayer lava("Lava", 0, 14, 16, std::make_unique<FlatFill>());
+            lava.blendMode = BlendMode::CARVEIN;
+            lava.targetBlockID = 0;
+            lava.blendWeight = 0.5f;
+            preset.push_back(std::move(lava));
+
+            TerrainLayer shoresDirt("Dirt-Marble", 14, 25, 7, std::make_unique<PerlinNoise3D>(123, 0.06f, 1.0f, 2, 2.0f, 0.5f));
+            shoresDirt.blendMode = BlendMode::CARVEIN;
+            shoresDirt.targetBlockID = 8;
+            shoresDirt.blendWeight = 0.55f;
+            preset.push_back(std::move(shoresDirt));
+
+            TerrainLayer shoresRock("Rock-Marble", 14, 25, 7, std::make_unique<PerlinNoise3D>(123, 0.06f, 1.0f, 2, 2.0f, 0.5f));
+            shoresRock.blendMode = BlendMode::CARVEIN;
+            shoresRock.targetBlockID = 6;
+            shoresRock.blendWeight = 0.55f;
+            preset.push_back(std::move(shoresRock));
+
+            TerrainLayer deepStone("Bottom sTONE", 0, 40, 2, std::make_unique<PerlinNoise3D>(999, 0.08f, 1.0f, 2, 2.0f, 0.5f));
+            deepStone.blendMode = BlendMode::CARVEIN;
+            deepStone.targetBlockID = 6;
+            deepStone.blendWeight = 0.6f;
+            preset.push_back(std::move(deepStone));
+
+            TerrainLayer gold("Gold Veins", 5, 40, 10, std::make_unique<PerlinNoise3D>(666, 0.125f, 1.0f, 2, 2.0f, 0.5f));
+            gold.blendMode = BlendMode::CARVEIN;
+            gold.targetBlockID = 6;
+            gold.blendWeight = 0.77f;
+            preset.push_back(std::move(gold));
+
+            TerrainLayer diamonds("Diamond Veins", 5, 25, 11, std::make_unique<PerlinNoise3D>(777, 0.14f, 1.0f, 2, 2.0f, 0.5f));
+            diamonds.blendMode = BlendMode::CARVEIN;
+            diamonds.targetBlockID = 6;
+            diamonds.blendWeight = 0.80f; 
+            preset.push_back(std::move(diamonds));
+
+            TerrainLayer ash("Mountain Peaks", 85, 255, 9, std::make_unique<FlatFill>());
+            ash.blendMode = BlendMode::CARVEIN;
+            ash.targetBlockID = 6;
+            ash.blendWeight = 0.5f;
+            preset.push_back(std::move(ash));
+
             SceneManager::getInstance().pushScene(std::make_unique<WorldGeneratorScene>(std::move(preset)));
         }
 
         ImGui::SetCursorPosX(center.x - buttonWidth * 0.5f);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + spacing);
-        if (ImGui::Button("3. Przykład", ImVec2(buttonWidth, buttonHeight))) {
+        if (ImGui::Button("3. ???", ImVec2(buttonWidth, buttonHeight))) {
             preset.clear();
 
             // Ręczny kod presetu np. dla ośnieżonych gór (High Peaks)

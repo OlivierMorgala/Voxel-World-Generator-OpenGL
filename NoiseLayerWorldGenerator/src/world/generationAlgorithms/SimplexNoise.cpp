@@ -65,19 +65,19 @@ void SimplexNoise::setSeed(int newSeed) {
     PermutationSimplex.insert(PermutationSimplex.end(), PermutationSimplex.begin(), PermutationSimplex.end());
 }
 
-/// Funkcja Hashujaca
+/// Metoda Hashujaca
 int SimplexNoise::hash(int x, int y)
 {
     return PermutationSimplex[PermutationSimplex[x & 255] + (y & 255)];
 }
 
-/// FUNKCJA DOTPORUDCT ILOCZYN SKALARNY
+/// METODA DOTPORUDCT ILOCZYN SKALARNY
 float SimplexNoise::dotProduct(float gx, float gy, float x, float y)
 {
     return gx * x + gy * y;
 }
 
-/// FUNKCJA NOISE'A 
+/// METODA NOISE'A 
 float SimplexNoise::simplexNoiseFunction(float x, float y)
 {
     //// Simplex Noise 2D JEST "ZBUDOWANY" Z TROJKATOW ROWNOBOCZONYCH -> ALGORYTM LICZY NOISE W KAZDYM Z WIERZCHOLKOW TROJKATA I NA KONIEC GO SUMUJE////
@@ -144,5 +144,5 @@ float SimplexNoise::simplexNoiseFunction(float x, float y)
         Noise3 = t2 * t2 * dotProduct(g2.x, g2.y, x2, y2);
     }
 
-    return 43.0f * (Noise1 + Noise2 + Noise3); // FUNKCJA ZWRACA CALKOWITY NOISE (WSPOLCZYNNIK 43.0f TO STALA NORMALIZACJI MATEMATYCZNEJ DO PRZEDZIALU [-1.0,1.0]
+    return 43.0f * (Noise1 + Noise2 + Noise3); // METODA ZWRACA CALKOWITY NOISE (WSPOLCZYNNIK 43.0f TO STALA NORMALIZACJI MATEMATYCZNEJ DO PRZEDZIALU [-1.0,1.0]
 }

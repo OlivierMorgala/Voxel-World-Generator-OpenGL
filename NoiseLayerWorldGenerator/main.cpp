@@ -77,7 +77,7 @@ int main() {
 		//Zapamiętanie poprzednich stanów przyciksów
 		InputManager::updateKeyStates();
 
-		//Pobranie danych wejściowych i przetworzenie zdarzeń systemowych takich jak zamknięcie okna, zmiana rozmiaru itp Ta funkcja jest kluczowa dla interakcji użytkownika z aplikacją i musi być wywoływana w każdej klatce
+		//Pobranie danych wejściowych i przetworzenie zdarzeń systemowych takich jak zamknięcie okna, zmiana rozmiaru itp Ta metoda jest kluczowa dla interakcji użytkownika z aplikacją i musi być wywoływana w każdej klatce
 		glfwPollEvents();
 
 		//Czyszczenie ekranu i przygotowanie do renderowania (czyszczenie bufora kolorów i bufora głębokości)

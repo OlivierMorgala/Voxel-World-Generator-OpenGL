@@ -25,7 +25,7 @@ void BlockDatabase::init()
 	blocksVector.push_back({ 13, "EmeraldOre", true, false, glm::vec3(0.10f, 0.85f, 0.35f) }); 
 	blocksVector.push_back({ 14, "Wood", true, false, glm::vec3(0.40f, 0.28f, 0.15f) });
 	blocksVector.push_back({ 15, "Water", false, true, glm::vec3(0.10f, 0.30f, 0.95f) });
-	blocksVector.push_back({ 16, "Lava", true, false, glm::vec3(0.95f, 0.35f, 0.0f) });
+	blocksVector.push_back({ 16, "Lava", true, true, glm::vec3(0.95f, 0.35f, 0.0f) });
 
 
 	//TEST PRZEPEŁNIENIA WEKTORA
