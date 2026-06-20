@@ -26,13 +26,13 @@ private:
 	static std::vector<BlockData> blocksVector;
 
 public:
-	// Inicjalizacja bazy danych bloków ta funkcja powinna być wywołana przy generowaniu świata przed jakimkolwiek użyciem danych bloków aby zapewnić że baza jest poprawnie wypełniona
+	// Inicjalizacja bazy danych bloków ta metoda powinna być wywołana przy generowaniu świata przed jakimkolwiek użyciem danych bloków aby zapewnić że baza jest poprawnie wypełniona
 	static void init();
 
-	// Funkcja rejestrująca nowy typ bloku i zwracająca jego ID.
+	// Metoda rejestrująca nowy typ bloku i zwracająca jego ID.
 	static BlockID registerBlockData(const std::string& name, bool isCollidable, bool isTransparent, glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f));
 
-	//Funkcja zwracająca dane bloku na podstawie jego ID
+	//Metoda zwracająca dane bloku na podstawie jego ID
 	static const BlockData& getBlockData(BlockID id);
 
 	static const std::vector<BlockData>& getAllBlocks();

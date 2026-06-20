@@ -10,7 +10,7 @@ Camera::Camera(glm::vec3 startPosition) :
 	updateCameraVectors();
 }
 
-// Metoda getViewMatrix: Metoda zwraca macierz widoku
+//Metoda zwarcająca macierz widoku (która służy do przsuwania świata w kierunku przciwnym do kamery co symuluje poruszenie się kamery)
 glm::mat4 Camera::getViewMatrix() const
 {
 	return glm::lookAt(position, position + front, up);
@@ -80,8 +80,11 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	glm::mat4 proj = getProjectionMatrix(aspectRatio);
 	glm::mat4 view = getViewMatrix();
 	
+	//Mnożymy macierz projekcji razy macierz widoku by otrzymać tzw macierz widoku projeckji
 	glm::mat4 viewProjectionMatrix = proj * view;
 
+
+	//Z otrzymanej macierzy jesteśmy w stanie wydobyć 6 płaszczyzn tworzących (frustum) figurę przypomniająca ścięty ostrosłup (Algorytm Gribba-Hartmanna przeczytać!)
 	frustum.far.normal.x = viewProjectionMatrix[0][3] - viewProjectionMatrix[0][2];
 	frustum.far.normal.y = viewProjectionMatrix[1][3] - viewProjectionMatrix[1][2];
 	frustum.far.normal.z = viewProjectionMatrix[2][3] - viewProjectionMatrix[2][2];
@@ -112,6 +115,7 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	frustum.bottom.normal.z = viewProjectionMatrix[2][3] + viewProjectionMatrix[2][1];
 	frustum.bottom.distance = viewProjectionMatrix[3][3] + viewProjectionMatrix[3][1];
 
+	//Obliczanie wektorów normalnych płaszczyzn (vektor prostopadły do płaszczyzny wskzujący na środek ekranu)
 	frustum.far.normalizeData();
 	frustum.near.normalizeData();
 	frustum.right.normalizeData();
@@ -122,26 +126,31 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	return frustum;
 }
 
-// Metoda isAABoundingBoxVisible: Metoda sprawdza czy dane trojwymiarowy blok/pudelko np.Chunk jest w ogole na ekranie - czyli czy mozemy go zobaczyc
+
+//(AABB - Axis-Aligned Bounding Box)
+//Metoda sprawdza czy prostopadłościan będący naszą kolmną znajduje sie w zasiegu pola widzenia kamery
 bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const
 {
 	// Uzywamy naszych 6 scian aby uzyc ich w petli
 	const Plane* planes[6] = { &frustum.far, &frustum.near, &frustum.top, &frustum.bottom, &frustum.right, &frustum.left };
 
+	//Testujemy AABB przeciwko każdej z 6 płaszczyzn kamery
 	for (int i = 0; i < 6; i++) {
-		// Szukamy tego rogu trojwymiarowego pudelka np.Chunka, ktory jest najbardziej wysuniety w strone aktualnej sciany
-		glm::vec3 farthestVertex = aabb.min;
-		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }
+
+		//Zmiast sprawdzać każdy z 8 wierzchołków sprawdzamy tylko wierzchołek który jest najbliżej płaszczyzny
+		//Max - prawo Min - Lewo  (jeśli wektor noramlny jest na + to patrzy w prawo)
+
+		glm::vec3 farthestVertex = aabb.min; 
+		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }  //Jeśli patrzymy w prawo to punkt będzie z prawej strony pudełka
 		if (planes[i]->normal.y >= 0) { farthestVertex.y = aabb.max.y; }
 		if (planes[i]->normal.z >= 0) { farthestVertex.z = aabb.max.z; }
 
-		// Jesli najbardziej wysuniety rog pudelka schowal sie za nasza sciana Frustruma
-		// to na 100% mozemy stwierdzic, ze pudelko nie znajduje sie w polu widzenia i gracz go nie widzi
+		//Jeśli najbliższy wierzchołek jest za płaszczyzną tnącą mówi to że obiektu nie widać (glm::dot liczy odległość od płaszczyzny)
 		if (glm::dot(planes[i]->normal, farthestVertex) + planes[i]->distance < 0) {
 			return false; // Ustawiamy false
 		}
 
 	}
 
-	return true; // Jesli "pudelko" znajduje sie choc troche w polu widzenia to return true
+	return true; //Jesli żadan płaszczyzna go nie odrzuciła rysujemy kolumne
 }

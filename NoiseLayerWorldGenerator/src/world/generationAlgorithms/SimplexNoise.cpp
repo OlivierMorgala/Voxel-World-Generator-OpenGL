@@ -90,7 +90,7 @@ float SimplexNoise::dotProduct(float gx, float gy, float x, float y)
 /// Metoda simplexNoiseFunction: Serce algorytmu, oblicza wartosc noise'a dla konkretnych wspolrzednych
 float SimplexNoise::simplexNoiseFunction(float x, float y)
 {
-    //Zamiast kwadratowych klocków(jak w Perlinie), u¿ywa siatki trójk¹tów równobocznych.
+    //Zamiast kwadratowych klockï¿½w(jak w Perlinie), uï¿½ywa siatki trï¿½jkï¿½tï¿½w rï¿½wnobocznych.
 
     float Noise1 = 0.0f, Noise2 = 0.0f, Noise3 = 0.0f;
 

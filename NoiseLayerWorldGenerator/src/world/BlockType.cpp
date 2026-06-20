@@ -11,7 +11,21 @@ void BlockDatabase::init()
 																		//ponieważ jest używany m.in w klasie Chunk 
 	
 	blocksVector.push_back({ 1, "Dirt", true, false, glm::vec3(0.35f, 0.24f, 0.15f) });
-	blocksVector.push_back({ 2, "Stone", true, false, glm::vec3(0.5f, 0.5f, 0.5f) });
+	blocksVector.push_back({ 2, "Stone", true, false, glm::vec3(0.28f, 0.28f, 0.28f) });
+	blocksVector.push_back({ 3, "Grass", true, false, glm::vec3(0.18f, 0.55f, 0.13f) }); 
+	blocksVector.push_back({ 4, "Sand", true, false, glm::vec3(0.92f, 0.86f, 0.65f) });
+	blocksVector.push_back({ 5, "Snow", true, false, glm::vec3(0.95f, 0.98f, 1.0f) }); 
+	blocksVector.push_back({ 6, "DarkRock", true, false, glm::vec3(0.12f, 0.12f, 0.14f) });
+	blocksVector.push_back({ 7, "Marble", true, false, glm::vec3(0.85f, 0.85f, 0.82f) });
+	blocksVector.push_back({ 8, "DarkDirt", true, false, glm::vec3(0.20f, 0.12f, 0.05f) });
+	blocksVector.push_back({ 9, "Clay", true, false, glm::vec3(0.55f, 0.58f, 0.65f) });
+	blocksVector.push_back({ 10, "GoldOre", true, false, glm::vec3(0.85f, 0.70f, 0.20f) });
+	blocksVector.push_back({ 11, "DiamondOre", true, false, glm::vec3(0.25f, 0.88f, 0.82f) });
+	blocksVector.push_back({ 12, "Lapis", true, false, glm::vec3(0.10f, 0.35f, 0.75f) });
+	blocksVector.push_back({ 13, "EmeraldOre", true, false, glm::vec3(0.10f, 0.85f, 0.35f) }); 
+	blocksVector.push_back({ 14, "Wood", true, false, glm::vec3(0.40f, 0.28f, 0.15f) });
+	blocksVector.push_back({ 15, "Water", false, true, glm::vec3(0.10f, 0.30f, 0.95f) });
+	blocksVector.push_back({ 16, "Lava", true, true, glm::vec3(0.95f, 0.35f, 0.0f) });
 
 
 	//TEST PRZEPEŁNIENIA WEKTORA
