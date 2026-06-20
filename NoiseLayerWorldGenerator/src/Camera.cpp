@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+// Konstruktor inicjalizuje podstawowe parametry camery
 Camera::Camera(glm::vec3 startPosition) :
 	position(startPosition),
 	front(glm::vec3(0.0f, 0.0f, -1.0f)),
@@ -15,18 +16,19 @@ glm::mat4 Camera::getViewMatrix() const
 	return glm::lookAt(position, position + front, up);
 }
 
-//Metoda zwracająca macierz projekcji (która słuzy do symulacji prespektywy np. dalsze obeikty stają się mniejsze)
+// Metoda getProjectionMatrix: Metoda zwraca macierz projekcji okreslajaca fov, proporcje oraz zasieg renderowania
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
 	return glm::perspective(glm::radians(config.fov), aspectRatio, config.viewBegin, config.viewDistance);
 }
 
+// Metoda procesKeyboardInput: Metoda obsluguje ruch kamery przy pomocy klawiatury
 void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 {
-	// Prędkość ruchu jest skalowana przez deltaTime, aby zapewnić płynny ruch niezależnie od liczby klatek na sekundę
+	// Predkosc ruchu jest skalowana przez deltaTime, aby zapewnic plynny ruch niezaleznie od liczby klatek na sekunde
 	float velocity = config.cameraSpeed * deltaTime;
 
-	// Aktualizujemy pozycję kamery na podstawie kierunku ruchu
+	// Aktualizujemy pozycje kamery na podstawie kierunku ruchu
 	if (direction == FORWARD)  position += front * velocity;
 	if (direction == BACKWARD) position -= front * velocity;
 	if (direction == LEFT)     position -= right * velocity;
@@ -35,6 +37,7 @@ void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 	if (direction == DOWN)     position -= worldUp * velocity;
 }
 
+// Metoda processMouseMovement: Metoda odpowiada za obsluge obracania kamery za pomoca myszy
 void Camera::processMouseMovement(float xoffset, float yoffset)
 {
 	// Aktualizujemy kąty Yaw(odchylenia - X) i Pitch(pochylenie - Y) na podstawie ruchu myszy
@@ -49,6 +52,7 @@ void Camera::processMouseMovement(float xoffset, float yoffset)
 	updateCameraVectors();
 }
 
+// Metoda updateCameraVectors: Metoda odpowiada za przeliczenie wektorow Front, Right, Up
 void Camera::updateCameraVectors()
 {
 	//Obliczamy nowy wektor kierunku patrzenia kamery (front) na podstawie aktualnych kątów Yaw i Pitch. Używamy funkcji trygonometrycznych aby przekształcić kąty na wektor kierunku w przestrzeni 3D
@@ -67,6 +71,7 @@ void Camera::updateCameraVectors()
 
 //Frustum------------------------------------------------------------
 
+// Metoda getFrustum: Metoda buduje wirtualne sciany naszego stozka widzenia 
 Frustum Camera::getFrustum(float aspectRatio) const 
 {
 	Frustum frustum;
@@ -126,7 +131,7 @@ Frustum Camera::getFrustum(float aspectRatio) const
 //Metoda sprawdza czy prostopadłościan będący naszą kolmną znajduje sie w zasiegu pola widzenia kamery
 bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const
 {
-	
+	// Uzywamy naszych 6 scian aby uzyc ich w petli
 	const Plane* planes[6] = { &frustum.far, &frustum.near, &frustum.top, &frustum.bottom, &frustum.right, &frustum.left };
 
 	//Testujemy AABB przeciwko każdej z 6 płaszczyzn kamery
@@ -142,7 +147,7 @@ bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox
 
 		//Jeśli najbliższy wierzchołek jest za płaszczyzną tnącą mówi to że obiektu nie widać (glm::dot liczy odległość od płaszczyzny)
 		if (glm::dot(planes[i]->normal, farthestVertex) + planes[i]->distance < 0) {
-			return false;
+			return false; // Ustawiamy false
 		}
 
 	}
