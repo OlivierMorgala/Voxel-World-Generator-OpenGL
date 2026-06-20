@@ -5,6 +5,9 @@
 
 class PerlinNoise2D : public TerrainAlgorithm {
 private:
+	
+	/// Podstawowe zmienne
+
 	float frequency;
 	float amplitude;
 	int octaves;
@@ -12,6 +15,7 @@ private:
 	float amplitudeChange;
 	std::vector<int> permutations;
 
+	// Funkcje Pomocnicze -> Sluzace do obliczania samej wartosci noise'a
 	float smoothInterpolation(float t, float x, float y);
 	float dotProduct(float gx, float gy, float x, float y);
 	float perlinNoiseFunction(float x, float y);
@@ -20,6 +24,7 @@ public:
 	PerlinNoise2D(unsigned seed, float freq, float amp, int octav, float freqChange, float ampChange);
 
 	float evaluate(float x, float z) override;
+	float evaluate3D(float x, float y, float z) override;
 	void renderImGui() override;
 	void setSeed(int newSeed) override;
 };

@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+// Konstruktor inicjalizuje podstawowe parametry camery
 Camera::Camera(glm::vec3 startPosition) :
 	position(startPosition),
 	front(glm::vec3(0.0f, 0.0f, -1.0f)),
@@ -9,22 +10,25 @@ Camera::Camera(glm::vec3 startPosition) :
 	updateCameraVectors();
 }
 
+//Metoda zwarcająca macierz widoku (która służy do przsuwania świata w kierunku przciwnym do kamery co symuluje poruszenie się kamery)
 glm::mat4 Camera::getViewMatrix() const
 {
 	return glm::lookAt(position, position + front, up);
 }
 
+// Metoda getProjectionMatrix: Metoda zwraca macierz projekcji okreslajaca fov, proporcje oraz zasieg renderowania
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
 	return glm::perspective(glm::radians(config.fov), aspectRatio, config.viewBegin, config.viewDistance);
 }
 
+// Metoda procesKeyboardInput: Metoda obsluguje ruch kamery przy pomocy klawiatury
 void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 {
-	// Prędkość ruchu jest skalowana przez deltaTime, aby zapewnić płynny ruch niezależnie od liczby klatek na sekundę
+	// Predkosc ruchu jest skalowana przez deltaTime, aby zapewnic plynny ruch niezaleznie od liczby klatek na sekunde
 	float velocity = config.cameraSpeed * deltaTime;
 
-	// Aktualizujemy pozycję kamery na podstawie kierunku ruchu
+	// Aktualizujemy pozycje kamery na podstawie kierunku ruchu
 	if (direction == FORWARD)  position += front * velocity;
 	if (direction == BACKWARD) position -= front * velocity;
 	if (direction == LEFT)     position -= right * velocity;
@@ -33,6 +37,7 @@ void Camera::processKeyboardInput(CameraMovement direction, float deltaTime)
 	if (direction == DOWN)     position -= worldUp * velocity;
 }
 
+// Metoda processMouseMovement: Metoda odpowiada za obsluge obracania kamery za pomoca myszy
 void Camera::processMouseMovement(float xoffset, float yoffset)
 {
 	// Aktualizujemy kąty Yaw(odchylenia - X) i Pitch(pochylenie - Y) na podstawie ruchu myszy
@@ -47,6 +52,7 @@ void Camera::processMouseMovement(float xoffset, float yoffset)
 	updateCameraVectors();
 }
 
+// Metoda updateCameraVectors: Metoda odpowiada za przeliczenie wektorow Front, Right, Up
 void Camera::updateCameraVectors()
 {
 	//Obliczamy nowy wektor kierunku patrzenia kamery (front) na podstawie aktualnych kątów Yaw i Pitch. Używamy funkcji trygonometrycznych aby przekształcić kąty na wektor kierunku w przestrzeni 3D
@@ -65,6 +71,7 @@ void Camera::updateCameraVectors()
 
 //Frustum------------------------------------------------------------
 
+// Metoda getFrustum: Metoda buduje wirtualne sciany naszego stozka widzenia 
 Frustum Camera::getFrustum(float aspectRatio) const 
 {
 	Frustum frustum;
@@ -73,8 +80,11 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	glm::mat4 proj = getProjectionMatrix(aspectRatio);
 	glm::mat4 view = getViewMatrix();
 	
+	//Mnożymy macierz projekcji razy macierz widoku by otrzymać tzw macierz widoku projeckji
 	glm::mat4 viewProjectionMatrix = proj * view;
 
+
+	//Z otrzymanej macierzy jesteśmy w stanie wydobyć 6 płaszczyzn tworzących (frustum) figurę przypomniająca ścięty ostrosłup (Algorytm Gribba-Hartmanna przeczytać!)
 	frustum.far.normal.x = viewProjectionMatrix[0][3] - viewProjectionMatrix[0][2];
 	frustum.far.normal.y = viewProjectionMatrix[1][3] - viewProjectionMatrix[1][2];
 	frustum.far.normal.z = viewProjectionMatrix[2][3] - viewProjectionMatrix[2][2];
@@ -105,6 +115,7 @@ Frustum Camera::getFrustum(float aspectRatio) const
 	frustum.bottom.normal.z = viewProjectionMatrix[2][3] + viewProjectionMatrix[2][1];
 	frustum.bottom.distance = viewProjectionMatrix[3][3] + viewProjectionMatrix[3][1];
 
+	//Obliczanie wektorów normalnych płaszczyzn (vektor prostopadły do płaszczyzny wskzujący na środek ekranu)
 	frustum.far.normalizeData();
 	frustum.near.normalizeData();
 	frustum.right.normalizeData();
@@ -116,23 +127,30 @@ Frustum Camera::getFrustum(float aspectRatio) const
 }
 
 
+//(AABB - Axis-Aligned Bounding Box)
+//Metoda sprawdza czy prostopadłościan będący naszą kolmną znajduje sie w zasiegu pola widzenia kamery
 bool Camera::isAABoundingBoxVisible(const Frustum& frustum, const AA_BoundingBox& aabb) const
 {
-	
+	// Uzywamy naszych 6 scian aby uzyc ich w petli
 	const Plane* planes[6] = { &frustum.far, &frustum.near, &frustum.top, &frustum.bottom, &frustum.right, &frustum.left };
 
+	//Testujemy AABB przeciwko każdej z 6 płaszczyzn kamery
 	for (int i = 0; i < 6; i++) {
 
-		glm::vec3 farthestVertex = aabb.min;
-		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }
+		//Zmiast sprawdzać każdy z 8 wierzchołków sprawdzamy tylko wierzchołek który jest najbliżej płaszczyzny
+		//Max - prawo Min - Lewo  (jeśli wektor noramlny jest na + to patrzy w prawo)
+
+		glm::vec3 farthestVertex = aabb.min; 
+		if (planes[i]->normal.x >= 0) { farthestVertex.x = aabb.max.x; }  //Jeśli patrzymy w prawo to punkt będzie z prawej strony pudełka
 		if (planes[i]->normal.y >= 0) { farthestVertex.y = aabb.max.y; }
 		if (planes[i]->normal.z >= 0) { farthestVertex.z = aabb.max.z; }
 
+		//Jeśli najbliższy wierzchołek jest za płaszczyzną tnącą mówi to że obiektu nie widać (glm::dot liczy odległość od płaszczyzny)
 		if (glm::dot(planes[i]->normal, farthestVertex) + planes[i]->distance < 0) {
-			return false;
+			return false; // Ustawiamy false
 		}
 
 	}
 
-	return true;
+	return true; //Jesli żadan płaszczyzna go nie odrzuciła rysujemy kolumne
 }

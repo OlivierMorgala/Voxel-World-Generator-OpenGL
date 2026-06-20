@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <algorithm>
 #include "world/ChunkColumn.h"
 #include "world/TerrainPipeline.h"
 

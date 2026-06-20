@@ -1,6 +1,8 @@
 #pragma once
 #include "world/TerrainPipeline.h"
 
+// Tworzymy klasy roznych modifierow oraz korzystamy z klasy wirtualnej TerrainModifier
+
 class ModifierInvert : public TerrainModifier {
 public:
 	float modify(float value) override;

@@ -90,22 +90,28 @@ void Chunk::collectMeshData(std::vector<Vertex>& opaqueVertices, std::vector<uin
 						//Sąsiad znajduje się wewnątrz tego samego chunka - pobieramy go bezpośrednio
 						neighborID = getBlock(neighborX, neighborY, neighborZ);
 					}
-
+					
+					//Domyślnie zakładamy że scianka jest ukryta
 					bool isFaceVisible = false;
 
-					
+					//Jeśli sasaid to powietrze (AIR Id==0)) oznaczamy że ścianka jest odkryta
 					if (neighborID == 0) {
 						isFaceVisible = true;
 					}
 					else {
+
+						//Pobieramy włściwości bloku sąsaida z structa (Bazy danych bloków) aby sprawdzić czy jest przeżroczysty
 						const BlockData& neighborBlockData = BlockDatabase::getBlockData(neighborID);
 
+
 						if (isCurrentBlockTransparent) {
+							//Jeśli aktualny blok jest przeźroczysty i sąsiad jest przeźroczysty ale to blok o innym id to renderujemy ścianke
 							if (neighborBlockData.isTransparent && neighborID != currentBlockID) {
 								isFaceVisible = true;
 							}
 						}
 						else {
+							//Jeśli obecny blok nie jest przeźroczysty a sąsiad jest przeźroczysty to renderujemy ścianke
 							if(neighborBlockData.isTransparent) {
 								isFaceVisible = true;
 							}
