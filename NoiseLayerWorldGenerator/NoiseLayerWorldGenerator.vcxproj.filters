@@ -232,5 +232,23 @@
     <Image Include="assets\textures\planet-sheet.png">
       <Filter>Pliki zasobów</Filter>
     </Image>
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc1.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc3.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc2.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="assets\docs\doc1.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="assets\docs\doc2.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="assets\docs\doc3.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
   </ItemGroup>
 </Project>

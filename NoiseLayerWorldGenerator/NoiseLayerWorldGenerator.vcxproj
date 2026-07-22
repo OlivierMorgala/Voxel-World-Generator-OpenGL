@@ -97,6 +97,12 @@
     <None Include="shaders\main.vert" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc1.png" />
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc2.png" />
+    <Image Include="..\..\..\..\Pictures\Screenshots\doc3.png" />
+    <Image Include="assets\docs\doc1.png" />
+    <Image Include="assets\docs\doc2.png" />
+    <Image Include="assets\docs\doc3.png" />
     <Image Include="assets\textures\planet-sheet.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -123,13 +129,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
